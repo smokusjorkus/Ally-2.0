@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd ally-frontend && npm install && npm run build",
+  "outputDirectory": "ally-frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "cd ally-frontend && npm run build"
+  }
+}
