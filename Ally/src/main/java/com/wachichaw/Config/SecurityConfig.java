@@ -1,4 +1,6 @@
 package com.wachichaw.Config;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -10,10 +12,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 
@@ -25,6 +27,9 @@ public class SecurityConfig {
     @Value("${frontend.url}")
     private String frontendUrl;
 
+    @Value("${cors.allowed-origin-patterns}")
+    private String corsAllowedOriginPatterns;
+
     public SecurityConfig(OAuth2LoginSuccessHandler oauthLogin) {
                 this.oauthLogin = oauthLogin;
         }
@@ -32,6 +37,7 @@ public class SecurityConfig {
     @Bean
 public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .csrf(csrf -> csrf.disable())
         .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // <-- Change this!
@@ -73,11 +79,22 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     }
 
     @Bean
-    public CorsFilter corsFilter() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174", frontendUrl)); // Specify allowed origins
+        List<String> allowedOriginPatterns = new ArrayList<>(Arrays.asList(corsAllowedOriginPatterns.split(",")));
+        if (frontendUrl != null && !frontendUrl.isBlank()) {
+            allowedOriginPatterns.add(frontendUrl);
+        }
+        configuration.setAllowedOriginPatterns(
+            allowedOriginPatterns.stream()
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .distinct()
+                .toList()
+        );
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Allowed HTTP methods
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -85,6 +102,6 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         source.registerCorsConfiguration("/uploads/**", configuration); 
         source.registerCorsConfiguration("/profile_pictures/**", configuration);
 
-        return new CorsFilter(source);
+        return source;
     }
 }
