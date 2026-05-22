@@ -14,12 +14,14 @@ public class EmailService {
 
     // Inject the API Key from Render environment variables
     // The key in Render MUST be set to MAILERSEND_API_KEY
-    @Value("${MAILERSEND_API_KEY}") 
+    @Value("${MAILERSEND_API_KEY:}") 
     private String apiToken;
 
-    // Define the sender details (using your trial domain)
-    private final String FROM_EMAIL = "ally@test.com"; 
-    private final String FROM_NAME = "Ally Team";
+    @Value("${mailersend.from-email:ally@test-2p0347zv7d3lzdrn.mlsender.net}")
+    private String fromEmail;
+
+    @Value("${mailersend.from-name:Ally Team}")
+    private String fromName;
 
     // The old JavaMailSender is no longer used:
     // @Autowired
@@ -29,6 +31,9 @@ public class EmailService {
     public void sendEmail(String to, String subject, String body) {
         if (!StringUtils.hasText(to) || !StringUtils.hasText(subject) || !StringUtils.hasText(body)) {
             throw new IllegalArgumentException("Email to, subject, and body must not be empty");
+        }
+        if (!StringUtils.hasText(apiToken)) {
+            throw new IllegalStateException("MAILERSEND_API_KEY is not configured");
         }
 
         // 🚨 DEBUG CODE ADDED HERE 🚨
@@ -49,7 +54,7 @@ public class EmailService {
         
         try {
             // Set sender details
-            email.setFrom("Sender Name", "allycitu@test-2p0347zv7d3lzdrn.mlsender.net"); 
+            email.setFrom(fromName, fromEmail); 
             
             // Add the recipient. MailerSend API uses the recipient email/name pattern
             email.addRecipient("to", to); 
