@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.net.URLEncoder;
 
+import com.google.firebase.FirebaseApp;
 
 
 @RestController
@@ -56,6 +57,16 @@ public class UserController {
 
     @Autowired
     private LawyerRepo lawyerRepo;
+
+    private Bucket firebaseBucket() {
+        if (FirebaseApp.getApps().isEmpty()) {
+            throw new ResponseStatusException(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Firebase Storage is not configured on the backend"
+            );
+        }
+        return StorageClient.getInstance().bucket();
+    }
 
     @PutMapping("/adminUpdate/{id}")
     public ResponseEntity<AdminEntity> updateAdmin(
@@ -107,7 +118,7 @@ public class UserController {
         if (credentialsFile != null && !credentialsFile.isEmpty()) {
             String fileName = UUID.randomUUID() + "_" + credentialsFile.getOriginalFilename();
 
-            Bucket bucket = StorageClient.getInstance().bucket();
+            Bucket bucket = firebaseBucket();
             Blob blob = bucket.create("credentials/" + fileName,
                                       credentialsFile.getBytes(),
                                       credentialsFile.getContentType());
@@ -183,7 +194,7 @@ public class UserController {
     if (profilePhotoFile != null && !profilePhotoFile.isEmpty()) {
         String fileName = UUID.randomUUID() + "_" + profilePhotoFile.getOriginalFilename();
 
-        Bucket bucket = StorageClient.getInstance().bucket();
+        Bucket bucket = firebaseBucket();
         Blob blob = bucket.create("profile_pictures/" + fileName,
                                   profilePhotoFile.getBytes(),
                                   profilePhotoFile.getContentType());
@@ -231,7 +242,7 @@ profilePhotoUrl = String.format(
     if (profilePhotoFile != null && !profilePhotoFile.isEmpty()) {
         String fileName = UUID.randomUUID() + "_" + profilePhotoFile.getOriginalFilename();
 
-        Bucket bucket = StorageClient.getInstance().bucket();
+        Bucket bucket = firebaseBucket();
         Blob blob = bucket.create("profile_pictures/" + fileName,
                                   profilePhotoFile.getBytes(),
                                   profilePhotoFile.getContentType());
@@ -250,7 +261,7 @@ profilePhotoUrl = String.format(
     if (credentialsFile != null && !credentialsFile.isEmpty()) {
         String fileName = UUID.randomUUID() + "_" + credentialsFile.getOriginalFilename();
 
-        Bucket bucket = StorageClient.getInstance().bucket();
+        Bucket bucket = firebaseBucket();
         Blob blob = bucket.create("credentials/" + fileName,
                                   credentialsFile.getBytes(),
                                   credentialsFile.getContentType());
