@@ -3,6 +3,7 @@ package com.wachichaw.Config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.cloud.storage.Bucket;
@@ -52,6 +53,7 @@ public class WekaConfig {
      * Useful for legal case classification and lawyer recommendation
      */
     @Bean("decisionTreeClassifier")
+    @Lazy
     public Classifier decisionTreeClassifier() {
         J48 j48 = new J48();
         j48.setUnpruned(false);
@@ -65,6 +67,7 @@ public class WekaConfig {
      * Good for text classification and case categorization
      */
     @Bean("naiveBayesClassifier")
+    @Lazy
     public Classifier naiveBayesClassifier() {
         return new NaiveBayes();
     }
@@ -74,6 +77,7 @@ public class WekaConfig {
      * Effective for complex pattern recognition in legal cases
      */
     @Bean("svmClassifier")
+    @Lazy
     public Classifier svmClassifier() {
         SMO smo = new SMO();
         return smo;
