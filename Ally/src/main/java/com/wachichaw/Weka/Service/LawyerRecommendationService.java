@@ -6,9 +6,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.wachichaw.Lawyer.Entity.LawyerEntity;
 import com.wachichaw.Lawyer.Repo.LawyerRepo;
@@ -17,7 +20,6 @@ import com.wachichaw.Weka.Entity.LawyerRecommendationRequest;
 import com.wachichaw.Weka.Entity.LawyerRecommendationResponse;
 
 import java.util.Arrays;
-import jakarta.annotation.PostConstruct;
 import weka.classifiers.trees.J48;
 import weka.classifiers.Evaluation;
 import weka.core.Instances;
@@ -38,13 +40,15 @@ public class LawyerRecommendationService {
     private LocalDateTime lastTrainingTime;
     private double modelAccuracy;
     
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void initializeModel() {
-        try {
-            trainModel();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                trainModel();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
     
     public void trainModel() throws Exception {
