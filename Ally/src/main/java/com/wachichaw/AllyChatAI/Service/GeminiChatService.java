@@ -1,132 +1,91 @@
 package com.wachichaw.AllyChatAI.Service;
 
-import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.*;
-
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class GeminiChatService {
 
-    @Value("${google.project-id}")
-    private String projectId;
+    @Value("${deepseek.api-key:}")
+    private String apiKey;
 
-    @Value("${google.model-id}")
-    private String modelId;
+    @Value("${deepseek.base-url:https://api.deepseek.com}")
+    private String baseUrl;
 
-    // Hardcoded System Prompt for consistency
-    private static final String SYSTEM_PROMPT = 
+    @Value("${deepseek.model:deepseek-chat}")
+    private String model;
+
+    private static final String SYSTEM_PROMPT =
         "You are Ally, a helpful legal AI assistant for the Philippines. " +
         "Answer strictly based on Philippine Law. " +
         "If the user asks about non-legal topics, politely steer them back to legal matters. " +
         "Keep your answers professional, concise, and helpful.";
 
-    private final GoogleCredentials googleCredentials;
     private final List<ObjectNode> conversationHistory = new ArrayList<>();
-
     private final ObjectMapper mapper = new ObjectMapper();
-
-    public GeminiChatService(GoogleCredentials googleCredentials) throws IOException {
-        this.googleCredentials = googleCredentials
-                .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));
-        this.googleCredentials.refreshIfExpired();
-    }
 
     public String sendMessage(String prompt) {
         try {
-            // 1. Add user message to history
+            if (apiKey == null || apiKey.isBlank()) {
+                return "DeepSeek API key is not configured. Please set DEEPSEEK_API_KEY in the server environment.";
+            }
+
             ObjectNode userNode = mapper.createObjectNode();
             userNode.put("role", "user");
-            ArrayNode userParts = mapper.createArrayNode();
-            userParts.addObject().put("text", prompt);
-            userNode.set("parts", userParts);
+            userNode.put("content", prompt);
             conversationHistory.add(userNode);
 
-            // 2. Build request body
             ObjectNode requestBody = mapper.createObjectNode();
+            requestBody.put("model", model);
+            requestBody.put("temperature", 0.3);
+            requestBody.put("max_tokens", 1024);
 
-            // --- SYSTEM INSTRUCTION (Crucial for Persona Consistency) ---
-            // This tells Vertex AI who the model is "supposed to be"
-            ObjectNode systemInstruction = mapper.createObjectNode();
-            ArrayNode systemParts = mapper.createArrayNode();
-            systemParts.addObject().put("text", SYSTEM_PROMPT);
-            systemInstruction.set("parts", systemParts);
-            requestBody.set("systemInstruction", systemInstruction);
-            // -----------------------------------------------------------
+            ArrayNode messagesNode = mapper.createArrayNode();
+            ObjectNode systemNode = mapper.createObjectNode();
+            systemNode.put("role", "system");
+            systemNode.put("content", SYSTEM_PROMPT);
+            messagesNode.add(systemNode);
 
-            // Add Conversation History
-            ArrayNode contentsNode = mapper.createArrayNode();
-            for (ObjectNode msg : conversationHistory) {
-                contentsNode.add(msg);
+            for (ObjectNode message : conversationHistory) {
+                messagesNode.add(message);
             }
-            requestBody.set("contents", contentsNode);
+            requestBody.set("messages", messagesNode);
 
-            // Generation Config
-            ObjectNode genConfig = mapper.createObjectNode();
-            genConfig.put("temperature", 0.3); // Low temp = more factual/conservative
-            genConfig.put("maxOutputTokens", 1024);
-            genConfig.put("topP", 0.8);
-            genConfig.put("topK", 40);
-            requestBody.set("generationConfig", genConfig);
-
-            this.googleCredentials.refreshIfExpired();
-
-            // 3. Prepare Auth Headers
-            String token = googleCredentials.getAccessToken().getTokenValue();
             HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(token);
+            headers.setBearerAuth(apiKey);
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             HttpEntity<String> entity = new HttpEntity<>(requestBody.toString(), headers);
+            String endpointUrl = baseUrl.replaceAll("/+$", "") + "/chat/completions";
 
-            // 4. DYNAMIC URL GENERATION
-            // Logic: Numeric ID = Fine-Tuned Endpoint. String ID = Base Model.
-            String endpointUrl;
-            
-            if (modelId.matches("\\d+")) {
-                // Numeric ID -> Vertex AI Endpoint (Fine-Tuned)
-                System.out.println("🤖 Connecting to Vertex AI Endpoint: " + modelId);
-                endpointUrl = String.format(
-                    "https://us-central1-aiplatform.googleapis.com/v1/projects/%s/locations/us-central1/endpoints/%s:generateContent",
-                    projectId, modelId
-                );
-            } else {
-                // String ID -> Google Publisher Model (Base Model like gemini-1.5-flash)
-                System.out.println("🤖 Connecting to Google Publisher Model: " + modelId);
-                endpointUrl = String.format(
-                    "https://us-central1-aiplatform.googleapis.com/v1/projects/%s/locations/us-central1/publishers/google/models/%s:generateContent",
-                    projectId, modelId
-                );
-            }
+            System.out.println("Connecting to DeepSeek model: " + model);
 
-            // 5. Send Request
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.postForEntity(endpointUrl, entity, String.class);
-
-            // 6. Extract Response
             String modelResponseText = extractTextFromResponse(response.getBody());
 
-            // 7. Add model response to history (so it remembers the context)
             ObjectNode modelNode = mapper.createObjectNode();
-            modelNode.put("role", "model");
-            ArrayNode modelParts = mapper.createArrayNode();
-            modelParts.addObject().put("text", modelResponseText);
-            modelNode.set("parts", modelParts);
+            modelNode.put("role", "assistant");
+            modelNode.put("content", modelResponseText);
             conversationHistory.add(modelNode);
 
             return modelResponseText;
-
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("❌ API Error: " + e.getMessage());
+            System.err.println("DeepSeek API Error: " + e.getMessage());
             return "Error connecting to Ally AI: " + e.getMessage();
         }
     }
@@ -134,10 +93,9 @@ public class GeminiChatService {
     private String extractTextFromResponse(String json) {
         try {
             JsonNode root = mapper.readTree(json);
-            JsonNode candidates = root.path("candidates");
-            if (candidates.isArray() && candidates.size() > 0) {
-                // Vertex AI response structure
-                return candidates.get(0).path("content").path("parts").get(0).path("text").asText();
+            JsonNode choices = root.path("choices");
+            if (choices.isArray() && choices.size() > 0) {
+                return choices.get(0).path("message").path("content").asText();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -145,9 +103,8 @@ public class GeminiChatService {
         return "No response text found.";
     }
 
-    // Reset conversation history
     public void resetHistory() {
         conversationHistory.clear();
-        System.out.println("🧹 Chat history cleared.");
+        System.out.println("Chat history cleared.");
     }
 }
