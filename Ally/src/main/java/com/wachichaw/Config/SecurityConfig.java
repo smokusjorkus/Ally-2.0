@@ -4,18 +4,23 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 
@@ -23,6 +28,7 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 public class SecurityConfig {
 
     private final OAuth2LoginSuccessHandler oauthLogin;
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -30,9 +36,13 @@ public class SecurityConfig {
     @Value("${cors.allowed-origin-patterns}")
     private String corsAllowedOriginPatterns;
 
-    public SecurityConfig(OAuth2LoginSuccessHandler oauthLogin) {
-                this.oauthLogin = oauthLogin;
-        }
+    public SecurityConfig(
+            OAuth2LoginSuccessHandler oauthLogin,
+            ObjectProvider<ClientRegistrationRepository> clientRegistrationRepository
+    ) {
+        this.oauthLogin = oauthLogin;
+        this.clientRegistrationRepository = clientRegistrationRepository.getIfAvailable();
+    }
 
     @Bean
 public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -58,10 +68,13 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 "/verifyClient","/api/email/send","/verifyLawyer"
             ).permitAll()
             .anyRequest().permitAll())
-        .oauth2Login(oauth2 -> oauth2
-            .successHandler(oauthLogin)
-            .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService())))
         .httpBasic(Customizer.withDefaults());
+
+    if (clientRegistrationRepository != null) {
+        http.oauth2Login(oauth2 -> oauth2
+            .successHandler(oauthLogin)
+            .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService())));
+    }
 
     return http.build();
 }
@@ -80,6 +93,22 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration());
+        return source;
+    }
+
+    @Bean
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistration() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration());
+
+        FilterRegistrationBean<CorsFilter> registration = new FilterRegistrationBean<>(new CorsFilter(source));
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
+    }
+
+    private CorsConfiguration corsConfiguration() {
         CorsConfiguration configuration = new CorsConfiguration();
         List<String> allowedOriginPatterns = new ArrayList<>(Arrays.asList(corsAllowedOriginPatterns.split(",")));
         if (frontendUrl != null && !frontendUrl.isBlank()) {
@@ -96,12 +125,6 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // For all paths
-        source.registerCorsConfiguration("/uploads/**", configuration); 
-        source.registerCorsConfiguration("/profile_pictures/**", configuration);
-
-        return source;
+        return configuration;
     }
 }
