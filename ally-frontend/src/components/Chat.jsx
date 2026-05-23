@@ -9,6 +9,7 @@ import {
     markChatAsRead
 } from '../services/chatService';
 import { fetchUserDetails } from '../utils/auth';
+import MarkdownText from './shared/MarkdownText';
 
 const Chat = ({ currentUserId, receiverId, currentUserRole, currentUserName, receiverName, compact = false }) => {
     const [messages, setMessages] = useState([]);
@@ -214,7 +215,7 @@ const Chat = ({ currentUserId, receiverId, currentUserRole, currentUserName, rec
                                             />
                                         ) : (
                                             <>
-                                                <p className="whitespace-pre-wrap">{message.content}</p>
+                                                <MarkdownText text={message.content} />
                                                 <div className="mt-1 text-xs opacity-75">
                                                     {message.timestamp?.toLocaleTimeString
                                                         ? message.timestamp.toLocaleTimeString([], {

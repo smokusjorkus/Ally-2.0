@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Avatar from './Avatar';
+import MarkdownText from '../shared/MarkdownText';
 
 // Message Bubble Component
 const MessageBubble = ({ message, isOwn, senderName, onEdit, onDelete, editingMessage, setEditingMessage }) => {
@@ -24,7 +25,7 @@ const MessageBubble = ({ message, isOwn, senderName, onEdit, onDelete, editingMe
           onMouseEnter={() => setShowActions(true)}
           onMouseLeave={() => setShowActions(false)}
         >
-          <p className="text-sm leading-relaxed break-words">{message.content}</p>
+          <MarkdownText text={message.content} className="text-sm leading-relaxed break-words" />
           
           {message.hasFile && message.fileName && (
             <div className={`mt-2 p-2 rounded-lg flex items-center gap-2 ${

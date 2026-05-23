@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, MessageCircle, Search, MessageSquarePlus } from 'lucide-react';
 import { sendConsultationMessage, checkRagHealth } from '../services/allyConsultationService';
+import MarkdownText from './shared/MarkdownText';
 
 const AllyConsultationChat = () => {
   const [messages, setMessages] = useState([]);
@@ -158,7 +159,7 @@ const AllyConsultationChat = () => {
                         ? 'bg-blue-600 text-white' 
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.text}</p>
+                      <MarkdownText text={message.text} className="text-sm leading-relaxed" />
                     </div>
                   </div>
 
