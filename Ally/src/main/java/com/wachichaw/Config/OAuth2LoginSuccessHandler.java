@@ -1,17 +1,16 @@
 package com.wachichaw.Config;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.URLEncoder;
 import java.util.Optional;
+import java.nio.charset.StandardCharsets;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import com.wachichaw.User.Entity.AccountType;
 import com.wachichaw.User.Entity.UserEntity;
 import com.wachichaw.User.Repo.UserRepo;
-import com.wachichaw.Client.Entity.ClientEntity;
 import com.wachichaw.Config.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +22,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     private final JwtUtil jwtUtil;
     private final UserRepo userRepo;
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
     public OAuth2LoginSuccessHandler(JwtUtil jwtUtil, UserRepo userRepo) {
         this.jwtUtil = jwtUtil;
@@ -41,19 +43,27 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     System.out.println(fname);
 
     Optional<UserEntity> existingUser = userRepo.findByEmail(email);
+    String frontendBaseUrl = frontendUrl.replaceAll("/+$", "");
     String redirectUrl;
 
     if (!existingUser.isPresent()) {
         // New user: do NOT generate or send JWT
-        redirectUrl = "http://localhost:5173/signup?email=" + email + "&fname=" + fname + "&lname=" + lname;
+        redirectUrl = frontendBaseUrl + "/signup?email=" + encode(email)
+            + "&fname=" + encode(fname)
+            + "&lname=" + encode(lname);
     } else {
         // Existing user: generate and send JWT
         UserEntity user = existingUser.get();
         String jwtToken = jwtUtil.generateToken(user);
         response.setHeader("Authorization", "Bearer " + jwtToken);
-        redirectUrl = "http://localhost:5173/oauth2-redirect?token=" + jwtToken + "&userId=" + user.getUserId() 
-                + "&role=" + user.getAccountType();
+        redirectUrl = frontendBaseUrl + "/oauth2-redirect?token=" + encode(jwtToken)
+                + "&userId=" + user.getUserId()
+                + "&role=" + encode(user.getAccountType().toString());
     }
     response.sendRedirect(redirectUrl);
+    }
+
+    private String encode(String value) {
+        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
     }
 }
