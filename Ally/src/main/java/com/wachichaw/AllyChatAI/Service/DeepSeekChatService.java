@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class GeminiChatService {
+public class DeepSeekChatService {
 
     @Value("${deepseek.api-key:}")
     private String apiKey;
@@ -25,7 +25,7 @@ public class GeminiChatService {
     @Value("${deepseek.base-url:https://api.deepseek.com}")
     private String baseUrl;
 
-    @Value("${deepseek.model:deepseek-chat}")
+    @Value("${deepseek.model:deepseek-v4-flash}")
     private String model;
 
     private static final String SYSTEM_PROMPT =

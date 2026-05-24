@@ -1,17 +1,13 @@
 """
-ALLY FastAPI Server - Gemini Classification
+ALLY FastAPI Server - DeepSeek Classification
 Run with: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-Instruction for Google Cloud Platform RAG Deployment
- gcloud run deploy ally \
- --source . \   
- --region us-central1 \   
- --allow-unauthenticated \   
- --cpu-boost \   
- --memory 4Gi \  
- --timeout 300 \
- --service-account ally-646@majestic-disk-480605-n9.iam.gserviceaccount.com \  
- --set-env-vars="PINECONE_API_KEY=pcsk_6cvypC_Jh3e45dQgHSrbJK3uNFV5Xguch5xesv3xebtp1kEunK535Pap1rcbDvpEGJrVeu,GOOGLE_PROJECT_ID=majestic-disk-480605-n9,GOOGLE_REGION=us-central1"
+Render RAG env vars:
+ PINECONE_API_KEY=<your-pinecone-api-key>
+ PINECONE_INDEX_NAME=ally-supreme-court-cases
+ DEEPSEEK_API_KEY=<your-deepseek-api-key>
+ DEEPSEEK_BASE_URL=https://api.deepseek.com
+ DEEPSEEK_MODEL=deepseek-v4-flash
 """
 
 from fastapi import FastAPI, HTTPException
@@ -24,16 +20,13 @@ from pinecone import Pinecone
 import os
 from dotenv import load_dotenv
 import re
-
-# Vertex AI for classification AND answer generation
-from vertexai.preview.generative_models import GenerativeModel
-import vertexai
+import requests
 
 load_dotenv()
 
 app = FastAPI(
     title="ALLY Legal Assistant API",
-    description="RAG with Gemini Classification",
+    description="RAG with DeepSeek Classification",
     version="7.0.0"
 )
 
@@ -90,22 +83,22 @@ class QueryResponse(BaseModel):
 # ==========================================
 embedding_model = None
 pinecone_index = None
-gemini_flash_model = None  # For classification (fast + cheap)
+deepseek_api_key = None
+deepseek_base_url = "https://api.deepseek.com"
+deepseek_model = "deepseek-v4-flash"
 
 # ==========================================
-# GEMINI CLASSIFIER
+# DEEPSEEK CLASSIFIER
 # ==========================================
-def classify_with_gemini(query: str) -> tuple[bool, str, str, float]:
+def classify_with_deepseek(query: str) -> tuple[bool, str, str, float]:
     """
-    Use Gemini Flash to classify queries
-    Fast, cheap, and accurate
+    Use DeepSeek to classify queries before RAG search.
     
     Returns:
         (is_valid, category, reason, confidence)
     """
-    if gemini_flash_model is None:
-        # Fallback if Gemini not available
-        return True, "fallback", "Gemini not available", 0.5
+    if not deepseek_api_key:
+        return True, "fallback", "DeepSeek API key not configured", 0.5
     
     prompt = f"""You are a classifier for a Philippine legal assistant chatbot named ALLY.
 
@@ -145,15 +138,29 @@ Examples:
 Your classification:"""
 
     try:
-        response = gemini_flash_model.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.1,  # Low temperature for consistent classification
-                "max_output_tokens": 150,
-            }
+        response = requests.post(
+            f"{deepseek_base_url.rstrip('/')}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {deepseek_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": deepseek_model,
+                "temperature": 0.1,
+                "max_tokens": 150,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "Classify the user's message. Reply only with CATEGORY, CONFIDENCE, and REASON lines.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+            },
+            timeout=30,
         )
+        response.raise_for_status()
         
-        text = response.text.strip()
+        text = response.json()["choices"][0]["message"]["content"].strip()
         
         # Parse response
         category_match = re.search(r'CATEGORY:\s*(\w+)', text, re.IGNORECASE)
@@ -170,7 +177,7 @@ Your classification:"""
         return is_valid, category, reason, confidence
         
     except Exception as e:
-        print(f"   ⚠️  Gemini classification error: {e}")
+        print(f"   ⚠️  DeepSeek classification error: {e}")
         # Fail open - allow through
         return True, "error", str(e), 0.5
 
@@ -181,9 +188,9 @@ Your classification:"""
 @app.on_event("startup")
 async def startup_event():
     """Initialize models on startup"""
-    global embedding_model, pinecone_index, gemini_flash_model
+    global embedding_model, pinecone_index, deepseek_api_key, deepseek_base_url, deepseek_model
     
-    print("🚀 Starting ALLY System (Gemini Classification)...")
+    print("🚀 Starting ALLY System (DeepSeek Classification)...")
     print(f"   📍 Environment: {'Render' if os.getenv('RENDER') else 'Local'}")
     
     # Load embedding model with error handling
@@ -211,56 +218,19 @@ async def startup_event():
         except Exception as e:
             print(f"   ❌ Pinecone failed: {e}")
             pinecone_index = None
+
+    # Initialize DeepSeek for classification.
+    print("   Configuring DeepSeek classifier...")
+    deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
+    deepseek_base_url = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
+    deepseek_model = os.getenv('DEEPSEEK_MODEL', 'deepseek-v4-flash')
+
+    if deepseek_api_key:
+        print(f"   DeepSeek classifier configured: {deepseek_model}")
+    else:
+        print("   DEEPSEEK_API_KEY not found; classifier will fail open")
     
-    # Initialize Gemini Flash for classification
-    print("   🧠 Connecting to Gemini Flash (classifier)...")
-    try:
-        project_id = os.getenv('GOOGLE_PROJECT_ID')
-        location = os.getenv('GOOGLE_REGION', 'us-central1')
-        
-        # Check for service account JSON in environment variable (Render)
-        service_account_json = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON')
-        
-        if project_id:
-            if service_account_json:
-                # RENDER: Use JSON from environment variable
-                print("   📋 Using service account from environment variable (Render)")
-                import json
-                import tempfile
-                
-                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
-                    f.write(service_account_json)
-                    credentials_path = f.name
-                
-                os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
-            else:
-                # LOCAL: Use file path from .env
-                credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS', './service-account-key.json')
-                print(f"   📁 Using service account from file: {credentials_path}")
-                
-                if not os.path.exists(credentials_path):
-                    print(f"   ⚠️  Service account file not found: {credentials_path}")
-                    raise FileNotFoundError(f"Service account file not found: {credentials_path}")
-                
-                os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
-            
-            # Initialize Vertex AI
-            vertexai.init(project=project_id, location=location)
-            
-            # Use Gemini Flash for fast classification
-            gemini_flash_model = GenerativeModel("gemini-2.5-flash")
-            
-            print(f"   ✅ Gemini Flash loaded (classifier)")
-        else:
-            print("   ⚠️  GOOGLE_PROJECT_ID not found")
-            gemini_flash_model = None
-    except Exception as e:
-        print(f"   ⚠️  Gemini failed: {e}")
-        import traceback
-        traceback.print_exc()
-        gemini_flash_model = None
-    
-    print("✅ ALLY Ready with Gemini Classification!\n")
+    print("✅ ALLY Ready with DeepSeek Classification!\n")
     
 # ==========================================
 # VALIDATION ENDPOINT
@@ -268,23 +238,23 @@ async def startup_event():
 @app.post("/api/validate", response_model=ValidationResponse)
 async def validate_question(request: ValidationRequest):
     """
-    Validate using Gemini Flash
+    Validate using DeepSeek
     Fast and accurate classification
     """
     try:
         query = request.query
         
-        print(f"\n🔍 Validating (Gemini): {query}")
+        print(f"\n🔍 Validating (DeepSeek): {query}")
         
-        # Classify with Gemini
-        is_valid, category, reason, confidence = classify_with_gemini(query)
+        # Classify with DeepSeek
+        is_valid, category, reason, confidence = classify_with_deepseek(query)
         
         print(f"   📊 Category: {category}")
         print(f"   📊 Confidence: {confidence:.3f}")
         print(f"   📝 Reason: {reason}")
         
         if not is_valid:
-            print(f"   ❌ Rejected by Gemini classifier")
+            print(f"   ❌ Rejected by DeepSeek classifier")
             
             # Context-aware rejection messages
             rejection_messages = {
@@ -374,17 +344,17 @@ async def validate_question(request: ValidationRequest):
                 is_valid=False,
                 rejection_reason=rejection_msg,
                 confidence=confidence,
-                method="gemini",
+                method="deepseek",
                 details={"category": category, "reason": reason}
             )
         
-        print(f"   ✅ Passed Gemini classifier")
+        print(f"   ✅ Passed DeepSeek classifier")
         
         return ValidationResponse(
             is_valid=True,
             rejection_reason=None,
             confidence=confidence,
-            method="gemini",
+            method="deepseek",
             details={"category": category, "reason": reason}
         )
         
@@ -404,7 +374,7 @@ async def validate_question(request: ValidationRequest):
 # ==========================================
 @app.post("/search")
 async def search_cases(request: SearchRequest):
-    """Search cases with Gemini classification"""
+    """Search cases with DeepSeek classification"""
     try:
         if not pinecone_index:
             return {
@@ -418,22 +388,22 @@ async def search_cases(request: SearchRequest):
         
         query = request.query
         
-        # Gemini validation
-        is_valid, category, reason, confidence = classify_with_gemini(query)
+        # DeepSeek validation
+        is_valid, category, reason, confidence = classify_with_deepseek(query)
         
         if not is_valid:
-            print(f"   ❌ Gemini rejected: {category}")
+            print(f"   ❌ DeepSeek rejected: {category}")
             return {
                 "cases": [],
                 "count": 0,
                 "query": query,
                 "rejected": True,
-                "rejection_stage": "gemini_filter",
+                "rejection_stage": "deepseek_filter",
                 "rejection_reason": reason,
                 "confidence": confidence
             }
         
-        print(f"   ✅ Gemini passed: {category}")
+        print(f"   ✅ DeepSeek passed: {category}")
         
         # If greeting/meta, return empty (Spring Boot handles)
         if category in ['GREETING', 'META']:
@@ -538,7 +508,7 @@ async def health_check():
             "vector_db": "pinecone",
             "embedding_model": "BAAI/bge-large-en-v1.5",
             "vectors_count": stats.total_vector_count,
-            "classifier": "Gemini Flash 1.5",
+            "classifier": "DeepSeek V4 Flash",
             "classification_type": "LLM-based",
             "relevance_threshold": "54%"
         }
@@ -554,7 +524,7 @@ async def root():
     return {
         "message": "ALLY Legal Assistant API",
         "version": "7.0.0",
-        "classifier": "Gemini Flash 1.5",
+        "classifier": "DeepSeek V4 Flash",
         "deployment": "Vercel-compatible",
         "features": ["LLM classification", "context-aware", "fast and cheap"]
     }
@@ -564,7 +534,7 @@ if __name__ == "__main__":
     import uvicorn
     print("\n" + "="*60)
     print("ALLY Legal Assistant API")
-    print("Version: 7.0.0 (Gemini Classification)")
+    print("Version: 7.0.0 (DeepSeek Classification)")
     print("="*60 + "\n")
     
     port = int(os.environ.get("PORT", 8000))  # default to 8000 if PORT isn't set

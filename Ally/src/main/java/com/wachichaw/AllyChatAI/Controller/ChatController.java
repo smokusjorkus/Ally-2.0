@@ -1,6 +1,6 @@
 package com.wachichaw.AllyChatAI.Controller;
 
-import com.wachichaw.AllyChatAI.Service.GeminiChatService;
+import com.wachichaw.AllyChatAI.Service.DeepSeekChatService;
 import com.wachichaw.AllyRAG.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class ChatController {
 
     @Autowired
-    private GeminiChatService geminiChatService;
+    private DeepSeekChatService deepSeekChatService;
 
     @Autowired
     private RagService ragService;
@@ -43,13 +43,13 @@ public class ChatController {
         String enhancedPrompt = request.getMessage();
 
         // ==========================================
-        // STAGE 1: Python Gemini Validation
+        // STAGE 1: Python DeepSeek Validation
         // ==========================================
-        System.out.println("🔍 Stage 1: Running Python Gemini validation...");
+        System.out.println("🔍 Stage 1: Running Python DeepSeek validation...");
         ValidationResponse pythonValidation = ragService.validateQuestion(request.getMessage());
         
         if (pythonValidation != null && pythonValidation.getIsValid() != null && !pythonValidation.getIsValid()) {
-            System.out.println("❌ REJECTED by Gemini classifier (" + pythonValidation.getMethod() + ")");
+            System.out.println("❌ REJECTED by DeepSeek classifier (" + pythonValidation.getMethod() + ")");
             System.out.println("   Reason: " + pythonValidation.getRejectionReason());
             System.out.println("   Confidence: " + pythonValidation.getConfidence());
             System.out.println("=".repeat(60) + "\n");
@@ -58,12 +58,12 @@ public class ChatController {
             chatResponse.setResponse(pythonValidation.getRejectionReason());
             chatResponse.setRelevantCases(null);
             chatResponse.setCaseCount(0);
-            chatResponse.setConfidence("Rejected - Gemini");
+            chatResponse.setConfidence("Rejected - DeepSeek");
             
             return ResponseEntity.badRequest().body(chatResponse);
         }
         
-        System.out.println("✅ PASSED Gemini validation (Stage 1)");
+        System.out.println("✅ PASSED DeepSeek validation (Stage 1)");
         if (pythonValidation != null && pythonValidation.getConfidence() != null) {
             System.out.println("   Confidence: " + String.format("%.3f", pythonValidation.getConfidence()));
         }
@@ -111,7 +111,7 @@ public class ChatController {
                 String rejectionMessage;
                 
                 switch (ragResults.getRejectionStage() != null ? ragResults.getRejectionStage() : "") {
-                    case "gemini_filter":
+                    case "deepseek_filter":
                         rejectionMessage = "❌ " + ragResults.getRejectionReason() + "\n\n" +
                             "💡 I specialize in Philippine law. Please ask about:\n" +
                             "• Legal rights and obligations\n" +
@@ -267,12 +267,12 @@ public class ChatController {
             System.out.println("=".repeat(60) + "\n");
             
         } else {
-            System.out.println("ℹ️  RAG not enabled - direct to Gemini");
+            System.out.println("ℹ️  RAG not enabled - direct to DeepSeek");
             System.out.println("=".repeat(60) + "\n");
         }
         
-        System.out.println("Sending to Gemini...");
-        String response = geminiChatService.sendMessage(enhancedPrompt);
+        System.out.println("Sending to DeepSeek...");
+        String response = deepSeekChatService.sendMessage(enhancedPrompt);
         chatResponse.setResponse(response);
         System.out.println("Response generated (" + response.length() + " chars)");
         
@@ -328,13 +328,13 @@ public class ChatController {
         health.put("status", "running");
         health.put("ragService", ragService.isRagServiceHealthy() ? "running" : "down");
         health.put("relevanceThreshold", relevanceThreshold + "%");
-        health.put("classifier", "Gemini Flash");
+        health.put("classifier", "DeepSeek V4 Flash");
         return ResponseEntity.ok(health);
     }
 
     @GetMapping("/reset")
     public ResponseEntity<String> resetChat() {
-        geminiChatService.resetHistory();
+        deepSeekChatService.resetHistory();
         return ResponseEntity.ok("🔄 Chat history reset.");
     }
 }

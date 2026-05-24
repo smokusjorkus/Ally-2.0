@@ -5,8 +5,8 @@ tqdm
 python-dotenv
 sentence-transformers
 torch
-google-cloud-aiplatform
 fastapi
 uvicorn
 pydantic
 pinecone
+requests

@@ -5,7 +5,7 @@ RAG (Retrieval-Augmented Generation) and Context Classification feature for the 
 ## Features
 
 - **RAG System**: Semantic search through Philippine Supreme Court cases
-- **Gemini Base Model**: Gemini for classifying legal-specific responses routing queries (Context Classification)
+- **DeepSeek V4 Flash**: DeepSeek for classifying legal-specific responses and routing queries (Context Classification)
 - **Vector Database**: Pinecone (production) / Qdrant (local testing)
 - **Embeddings**: BAAI/bge-large-en-v1.5 (1024 dimensions)
 
@@ -14,7 +14,7 @@ RAG (Retrieval-Augmented Generation) and Context Classification feature for the 
 - pip
 - at least 2GB RAM free (for embeddings model)
 - Pinecone (for cloud vector database)
-- Google Cloud Platform Account (for Vertex AI)
+- DeepSeek API key
 
 ## Installation
 
@@ -41,11 +41,10 @@ pip install -r requirements.txt
 
 Create a `.env` file in the Ally-FinetuneRAG folder:
 ```env
-# Vertex AI Fine-tuned Model Configuration
-GOOGLE_PROJECT_ID=your-project-id-here
-GOOGLE_ENDPOINT_ID=your-endpoint-id-here
-GOOGLE_REGION=us-central1
-GOOGLE_APPLICATION_CREDENTIALS=./service-account-key.json
+# DeepSeek Classification
+DEEPSEEK_API_KEY=your-deepseek-api-key-here
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
 
 # Pinecone Cloud Vector Database (PRODUCTION)
 PINECONE_API_KEY=your-pinecone-api-key-here
@@ -56,7 +55,7 @@ PINECONE_INDEX_NAME=ally-supreme-court-cases
 QDRANT_PATH=./vector-db
 ```
 
-Place the `service-account-key.json` in the project root.
+Google Vertex credentials are not required for the current DeepSeek path.
 
 ## Project Structure
 ```
@@ -85,7 +84,7 @@ Ally-FinetuneRAG/
 ├── venv/                      # Python virtual environment
 ├── .env                       # Environment variables
 ├── .gitignore
-├── geminitest.py              # Test Gemini integration
+├── geminitest.py              # Legacy Gemini integration test
 ├── main.py                    # FastAPI server (RAG + Context Classifier)
 ├── service-account-key.json   # GCP Credentials
 ├── readme.md                  # This file
@@ -147,11 +146,13 @@ Opens an interactive terminal to test queries against the RAG system using Pinec
 
 ### Testing & Development
 
-#### Test Gemini integration
+#### Test DeepSeek integration
 ```bash
-python geminitest.py
+curl -X POST http://localhost:8000/api/validate \
+  -H "Content-Type: application/json" \
+  -d '{"query":"Can an employer fire me without notice?"}'
 ```
-Tests connection to Gemini Model for context classification.
+Tests connection to the configured DeepSeek model for context classification.
 
 ### Production (Integration with Main App)
 
@@ -201,9 +202,9 @@ curl -X POST http://localhost:8000/api/query \
   -d '{"question":"How do I report an Illegal Recruitment?"}'
 ```
 
-## Context Classification with Gemini
+## Context Classification with DeepSeek
 
-The system uses Gemini to classify user queries and route them appropriately:
+The system uses DeepSeek to classify user queries and route them appropriately:
 
 ### Classification Categories
 
@@ -226,7 +227,7 @@ The system uses Gemini to classify user queries and route them appropriately:
 ### How Classification Works
 
 ```python
-# Example from geminitest.py
+# Example classification flow
 query = "Can an employer fire me without notice?"
 classification = classify_query(query)
 
@@ -305,10 +306,9 @@ Interactive mode using local Qdrant database instead of Pinecone.
 - Verify index region is accessible
 
 ### Model connection errors
-- Verify `.env` has correct Vertex AI credentials
-- Check service account has Vertex AI User role
-- Ensure `service-account-key.json` exists and is valid
-- Test with `python geminitest.py`
+- Verify `.env` or Render has a valid `DEEPSEEK_API_KEY`
+- Verify `DEEPSEEK_MODEL=deepseek-v4-flash`
+- Test with `POST /api/validate`
 
 ### Slow indexing
 - Pinecone upload takes hours (depending on size) for full dataset
@@ -331,15 +331,15 @@ Interactive mode using local Qdrant database instead of Pinecone.
 - Delete `vector-db/` and rebuild if needed
 
 ### Context classification issues
-- Ensure `GOOGLE_PROJECT_ID` and `GOOGLE_ENDPOINT_ID` are set
-- Verify service account has proper permissions
-- Test with `python geminitest.py`
+- Ensure `DEEPSEEK_API_KEY` is set
+- Verify `DEEPSEEK_BASE_URL=https://api.deepseek.com`
+- Test with `POST /api/validate`
 
 
 ## Model Information
 
 - **Embeddings**: [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5) (1024 dimensions)
-- **Classification**: Gemini for context classification and query routing
+- **Classification**: DeepSeek V4 Flash for context classification and query routing
 - **Vector DB (Production)**: Pinecone (cloud-hosted)
 - **Vector DB (Local - Optional)**: Qdrant (SQLite-based)
 
@@ -359,7 +359,7 @@ Interactive mode using local Qdrant database instead of Pinecone.
 ```
 User Query
     ↓
-Context Classification (Gemini)
+Context Classification (DeepSeek)
     ↓
 [If Legal Query]
     ↓
@@ -371,7 +371,7 @@ Context Formatting (Top 5 relevant cases)
     ↓
 Prompt Engineering (System prompt + context + query)
     ↓
-Response Generation (Fine-tuned Gemini from Springboot BACKEND)
+Response Generation (DeepSeek from Spring Boot backend)
     ↓
 Confidence Calculation
     ↓
@@ -383,7 +383,7 @@ Response with Sources + Citations
 ```
 User Input
     ↓
-Gemini Classifier
+DeepSeek Classifier
     ↓
 ├─ Legal Query → RAG Pipeline
 ├─ Greeting → Simple Response

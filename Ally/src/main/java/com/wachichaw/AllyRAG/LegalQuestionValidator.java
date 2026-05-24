@@ -6,8 +6,8 @@ import org.springframework.stereotype.Component;
 public class LegalQuestionValidator {
     
     /**
-     * Backup if Gemini is unreachable
-     * Real validation is done by Gemini in Python backend
+     * Backup if DeepSeek is unreachable.
+     * Real validation is done by DeepSeek in the Python RAG backend.
      */
     public ValidationResult validate(String question) {
         if (question == null || question.trim().isEmpty()) {
@@ -19,7 +19,7 @@ public class LegalQuestionValidator {
                 "Your message is too long. Please keep it under 2000 characters.");
         }
         
-        // Pass everything else - let Gemini handle it
+        // Pass everything else - let DeepSeek handle it.
         return new ValidationResult(true, null);
     }
     
