@@ -6,14 +6,14 @@ import { getAnalytics, initializeAnalytics } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAEND7pyI9eybjGxaMFwb1TuoxNOskdQKE",
-  authDomain: "ally-45698.firebaseapp.com",
-  databaseURL: "https://ally-45698-default-rtdb.firebaseio.com",
-  projectId: "ally-45698",
-  storageBucket: "ally-45698.firebasestorage.app",
-  messagingSenderId: "269454537432",
-  appId: "1:269454537432:web:914f23018650286236ddad",
-  measurementId: "G-N9RJWEG8N7"
+  apiKey: "AIzaSyCRzcdZsqQgUI_f-icMCxzIWPvSQsQfe64",
+  authDomain: "ally-2-3936e.firebaseapp.com",
+  databaseURL: "https://ally-2-3936e-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ally-2-3936e",
+  storageBucket: "ally-2-3936e.firebasestorage.app",
+  messagingSenderId: "987902081832",
+  appId: "1:987902081832:web:e4e4f1f6029d4fa1c66e1d",
+  measurementId: "G-WTBQ81C80X"
 };
 
 // Initialize Firebase
