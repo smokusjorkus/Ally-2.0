@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,6 +52,9 @@ public class DocumentController {
     private LegalCaseRepo legalCaseRepo;
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Value("${storage.type:local}")
+    private String storageType;
     
     public DocumentController(DocumentService documentService) {
         this.documentService = documentService;
@@ -210,6 +214,30 @@ public class DocumentController {
             }
 
             try {
+                if (!"firebase".equalsIgnoreCase(storageType)) {
+                    Path localPath = Paths.get(fileUrl).normalize();
+                    if (!Files.exists(localPath)) {
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body("File not found in local storage");
+                    }
+
+                    byte[] fileContent = Files.readAllBytes(localPath);
+                    String contentType = Files.probeContentType(localPath);
+                    if (contentType == null) {
+                        contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                    }
+
+                    InputStreamResource resource = new InputStreamResource(
+                        new java.io.ByteArrayInputStream(fileContent));
+
+                    return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + document.getDocumentName() + "\"")
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileContent.length))
+                        .body(resource);
+                }
+
                 // Extract file name from URL for Firebase Storage access
                 String blobName;
                 if (fileUrl.contains("/o/")) {

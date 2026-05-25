@@ -63,6 +63,9 @@ public class UserController {
     @Value("${storage.type:local}")
     private String storageType;
 
+    @Value("${local.storage.path:../local-storage}")
+    private String localStoragePath;
+
     private boolean useFirebaseStorage() {
         return "firebase".equalsIgnoreCase(storageType);
     }
@@ -97,6 +100,27 @@ public class UserController {
             bucket.getName(),
             encodedFileName
         );
+    }
+
+    private String storeUpload(String folder, MultipartFile file) throws java.io.IOException {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        if (useFirebaseStorage()) {
+            return uploadToFirebase(folder, file);
+        }
+
+        Path uploadDir = Paths.get(localStoragePath, folder).normalize();
+        Files.createDirectories(uploadDir);
+
+        String originalName = Optional.ofNullable(file.getOriginalFilename()).orElse("upload");
+        String safeOriginalName = Paths.get(originalName).getFileName().toString();
+        String fileName = UUID.randomUUID() + "_" + safeOriginalName;
+        Path target = uploadDir.resolve(fileName).normalize();
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+        return target.toString();
     }
 
     @PutMapping("/adminUpdate/{id}")
@@ -144,7 +168,7 @@ public class UserController {
             @PathVariable int id,
             @RequestParam("credentials") MultipartFile credentialsFile
     ) throws java.io.IOException {
-        String credentialsFileURL = uploadToFirebase("credentials", credentialsFile);
+        String credentialsFileURL = storeUpload("credentials", credentialsFile);
         LawyerEntity updated = userService.updateLawyerCredentials(id, credentialsFileURL);
         return ResponseEntity.ok(updated);
     }
@@ -202,7 +226,7 @@ public class UserController {
         @RequestParam("zip") String zip,
         @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile
     ) throws java.io.IOException {
-        String profilePhotoUrl = uploadToFirebase("profile_pictures", profilePhotoFile);
+        String profilePhotoUrl = storeUpload("profile_pictures", profilePhotoFile);
         ClientEntity client = userService.createClient(email, password, fname, lname, 
                                         phoneNumber, address, city, province, zip, profilePhotoUrl);
         return ResponseEntity.ok(client);
@@ -233,8 +257,8 @@ public class UserController {
     @RequestParam(value = "educationInstitution", required = false) String educationInstitution,
     @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile
 ) throws java.io.IOException {
-    String profilePhotoUrl = uploadToFirebase("profile_pictures", profilePhotoFile);
-    String credentialsFileURL = uploadToFirebase("credentials", credentialsFile);
+    String profilePhotoUrl = storeUpload("profile_pictures", profilePhotoFile);
+    String credentialsFileURL = storeUpload("credentials", credentialsFile);
 
     LawyerEntity lawyer = userService.createLawyer(
         email,

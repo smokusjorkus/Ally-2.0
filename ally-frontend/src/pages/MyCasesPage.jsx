@@ -46,7 +46,7 @@ const MyCasesPage = () => {
         casesData = await caseService.getLawyerCases(authData.userId);
       }
 
-      setCases(casesData || []);
+      setCases((casesData || []).filter(case_ => case_.status !== 'CANCELLED'));
     } catch (err) {
       console.error('Error fetching cases:', err);
       setError(err.message || 'Failed to fetch cases');

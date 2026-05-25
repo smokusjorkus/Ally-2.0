@@ -130,7 +130,8 @@ public class LegalCaseService {
             throw new RuntimeException("Accepted or completed cases cannot be deleted");
         }
 
-        legalCaseRepo.delete(legalCase);
+        legalCase.setStatus(CaseStatus.CANCELLED);
+        legalCaseRepo.save(legalCase);
     }
 
     // Weka 

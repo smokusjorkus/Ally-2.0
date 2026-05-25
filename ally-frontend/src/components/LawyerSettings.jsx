@@ -215,10 +215,12 @@ const LawyerSettings = ({ user }) => {
 
   const handleUpdate = async () => {
     const finalPracticeAreas = practiceAreasChips.length > 0 ? practiceAreasChips : [];
+    const cleanPhoneNumber = personalInfo.phone
+      ? String(personalInfo.phone).replace(/\D/g, '')
+      : '';
     const updatedUserData = {
-      ...personalInfo,
-      ...address,
-      phoneNumber: personalInfo.phone,
+      email: personalInfo.email,
+      phoneNumber: cleanPhoneNumber ? Number(cleanPhoneNumber) : null,
       experience: personalInfo.experience,
       barNumber: personalInfo.barNumber,
       address: address.line1,
@@ -229,8 +231,6 @@ const LawyerSettings = ({ user }) => {
       city: address.cityState,
       specialization: finalPracticeAreas, // use 'specialization' for backend
       educationInstitution: personalInfo.educationInstitution,
-      prof_pic: currentProfilePhoto,
-      credentials: personalInfo.credentials, 
     };
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/lawyerUpdate/${user.id}`, {
