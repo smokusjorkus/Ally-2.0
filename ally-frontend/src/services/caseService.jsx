@@ -166,4 +166,28 @@ export const caseService = {
       throw error;
     }
   },
+
+  deleteClientCase: async (caseId) => {
+    try {
+      const authData = getAuthData();
+      if (!authData) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/${caseId}/client/${authData.userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authData.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete case');
+      }
+    } catch (error) {
+      console.error('Error deleting case:', error);
+      throw error;
+    }
+  },
 };

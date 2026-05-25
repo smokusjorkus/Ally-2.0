@@ -118,6 +118,21 @@ public class LegalCaseService {
         return legalCaseRepo.save(legalCase);
     }
 
+    public void deleteClientCase(int caseId, int clientId) {
+        LegalCasesEntity legalCase = legalCaseRepo.findById(caseId)
+                .orElseThrow(() -> new RuntimeException("Case not found with ID: " + caseId));
+
+        if (legalCase.getClient() == null || legalCase.getClient().getUserId() != clientId) {
+            throw new RuntimeException("Client " + clientId + " is not authorized to delete case " + caseId);
+        }
+
+        if (legalCase.getStatus() == CaseStatus.ACCEPTED || legalCase.getStatus() == CaseStatus.COMPLETED) {
+            throw new RuntimeException("Accepted or completed cases cannot be deleted");
+        }
+
+        legalCaseRepo.delete(legalCase);
+    }
+
     // Weka 
 
     // Find a legal case by its ID

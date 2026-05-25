@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, User, FileText, CheckCircle, XCircle, AlertCircle, Clock, CalendarPlus, Upload, Eye } from 'lucide-react';
+import { X, Calendar, User, FileText, CheckCircle, XCircle, AlertCircle, Clock, CalendarPlus, Upload, Eye, Trash2 } from 'lucide-react';
 import { BookingModal } from './BookingModal';
 import { documentService } from '../services/documentService';
 import { getAuthData } from '../utils/auth';
@@ -11,12 +11,14 @@ export const CaseDetailsModal = ({
   isOpen, 
   onClose, 
   onStatusChange, 
+  onDeleteCase,
   onAppointmentBooked 
 }) => {
   const navigate = useNavigate();
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [documentCount, setDocumentCount] = useState(0);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load document count for accepted cases
   useEffect(() => {
@@ -127,6 +129,21 @@ export const CaseDetailsModal = ({
 
   const handleBookAppointment = () => {
     setIsBookingModalOpen(true);
+  };
+
+  const canClientDelete = userRole === 'CLIENT' && ['PENDING', 'DECLINED'].includes(case_?.status);
+
+  const handleDeleteCase = async () => {
+    if (!onDeleteCase || !canClientDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await onDeleteCase(case_.caseId);
+    } catch (error) {
+      console.error('Error deleting case:', error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleAppointmentBookingSuccess = () => {
@@ -322,14 +339,27 @@ export const CaseDetailsModal = ({
 
           {/* Footer with Actions */}
           <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
-            {case_.status === 'ACCEPTED' && (
-              <button
-                onClick={handleCompleteCase}
-                className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Complete
-              </button>
-            )}
+            <div>
+              {case_.status === 'ACCEPTED' && (
+                <button
+                  onClick={handleCompleteCase}
+                  className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Complete
+                </button>
+              )}
+
+              {canClientDelete && (
+                <button
+                  onClick={handleDeleteCase}
+                  disabled={isDeleting}
+                  className="flex items-center gap-2 px-6 py-2 text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isDeleting ? 'Deleting...' : 'Delete Case'}
+                </button>
+              )}
+            </div>
             <button
               onClick={onClose}
               className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"

@@ -353,7 +353,20 @@ def scrape_month(month, year, max_cases=None):
 
 if __name__ == "__main__":
    
-    scrape_month("Jan", 2023)
+    scrape_month("Jan", 2025)
+    scrape_month("Feb", 2025)
+    scrape_month("Mar", 2025)
+    scrape_month("Apr", 2025)
+    scrape_month("May", 2025)
+    scrape_month("Jun", 2025)
+    scrape_month("Jul", 2025)
+    scrape_month("Aug", 2025)
+    scrape_month("Sep", 2025)
+    scrape_month("Oct", 2025)
+    scrape_month("Nov", 2025)
+    scrape_month("Dec", 2025)
+    
+
 
     # Example usage:
     # To scrape January 2025 with no limit on number of cases:

@@ -92,6 +92,21 @@ const MyCasesPage = () => {
     // For now, just log the success
   };
 
+  const handleDeleteCase = async (caseId) => {
+    const confirmed = window.confirm('Delete this case? This cannot be undone.');
+    if (!confirmed) return false;
+
+    try {
+      await caseService.deleteClientCase(caseId);
+      setCases(prevCases => prevCases.filter(case_ => case_.caseId !== caseId));
+      return true;
+    } catch (err) {
+      console.error('Error deleting case:', err);
+      setError(err.message || 'Failed to delete case');
+      return false;
+    }
+  };
+
   if (loading) {
     return (
       <div className="container max-w-5xl px-4 mx-auto py-8">
@@ -184,6 +199,7 @@ const MyCasesPage = () => {
             cases={filteredCases}
             userRole={authData?.accountType}
             onStatusChange={handleStatusChange}
+            onDeleteCase={handleDeleteCase}
             onAppointmentBooked={handleAppointmentBooked}
           />
         </div>

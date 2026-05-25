@@ -1,0 +1,3015 @@
+pages 96
+
+--- PAGE 1 ---
+ 
+CEBU INSTITUTE OF TECHNOLOGY 
+UNIVERSITY 
+ 
+ 
+COLLEGE OF COMPUTER STUDIES 
+ 
+ 
+ 
+ 
+ 
+Software Requirements Specifications 
+for 
+ALLY: Leveraging Digital Platforms to Enhance Access to Legal Aid 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 2 ---
+Change History 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Authors 
+Date 
+Description of 
+version 
+Version 
+Lumauag, Johanne 
+Gabriel P. 
+ 
+Alesna, Ervin Dione V. 
+ 
+Butihen, Joseph Harry 
+G. 
+ 
+Dioquino, John 
+Lawrence L. 
+ 
+Ortega, Harvey A. 
+4/30/2026 
+Initial Draft 
+1.0 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 3 ---
+Table of Contents 
+ 
+ 
+Change History​
+2 
+Table of Contents​
+3 
+1.​
+Introduction​
+4 
+1.1.​
+Purpose​
+4 
+1.2.​
+Scope​
+4 
+1.3.​
+Definitions, Acronyms and Abbreviations​
+4 
+1.4.​
+References​
+4 
+2.​
+Overall Description​
+5 
+2.1.​
+Product perspective​
+5 
+2.2.​
+User characteristics​
+5 
+2.4. ​
+Constraints​
+5 
+2.5. ​
+Assumptions and dependencies​
+6 
+3.​
+Specific Requirements​
+7 
+3.1.​
+External interface requirements​
+7 
+3.1.1.​
+Hardware interfaces​
+7 
+3.1.2.​
+Software interfaces​
+7 
+3.1.3.​
+Communications interfaces​
+7 
+3.2.​
+Functional requirements​
+7 
+Module 1​
+7 
+Module 2​
+8 
+3.4​
+Non-functional requirements​
+8 
+Performance​
+8 
+Security​
+8 
+Reliability​
+8 
+ 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+
+--- PAGE 4 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+1. ​Introduction 
+ 
+1.1. ​ Purpose  
+ALLY is an AI-powered web platform designed to improve access to legal information 
+and services for Filipino citizens, particularly those who face challenges in obtaining qualified 
+legal representation or understanding their rights under Philippine law. This version of ALLY 
+represents an enhanced and refined iteration of a previously developed system, incorporating 
+improvements in functionality, system architecture, security, and overall user experience. 
+This Software Requirements Specification (SRS) defines the complete set of 
+functional, non-functional, and interface requirements for the improved ALLY platform. It 
+builds upon the foundation of the earlier version by introducing optimized features, expanded 
+capabilities, and updated technical standards. The document serves as the primary reference 
+for system design, development, testing, and deployment, ensuring a clear, consistent, and 
+shared understanding among all stakeholders, including development teams, quality 
+assurance personnel, and project management. 
+1.2. ​ Scope 
+​
+The ALLY platform is a secure, AI-powered, web-based legal support infrastructure 
+designed to improve access to preliminary legal information and streamline legal workflow 
+management between Filipino citizens and authorized legal practitioners. It serves as a 
+technology-driven intermediary that helps users access legal resources, organize legal 
+concerns, manage case-related information, and collaborate with qualified legal practitioners 
+within a secure digital environment. 
+The system architecture and functional design are centered on the following key objectives: 
+AI Model Optimization and Domain-Restricted Legal Assistance​
+The platform incorporates domain-restricted AI models designed to improve the accuracy, 
+clarity, and relevance of preliminary legal information. These models use verified Philippine 
+legal datasets, legal references, and contextual retrieval techniques to support legal concern 
+classification, case relevance matching, and user comprehension. The AI module applies 
+intent classification and contextual guardrails to limit responses to Philippine legal topics and 
+reject queries outside the supported legal domain. The system also supports periodic 
+evaluation of AI outputs, retrieval accuracy, and out-of-scope response handling to support 
+future refinement. 
+ 
+ 
+Page 4 of 96 
+ 
+
+--- PAGE 5 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Legal API and Verified Legal Repository Integration​
+The platform retrieves legal references through available legal APIs and a curated internal 
+legal repository containing verified Philippine laws, jurisprudence, ordinances, and related 
+legal materials. Where direct API integration is limited, the internal repository will serve as the 
+primary source of verified legal references gathered from official government sources and 
+recognized legal publications. 
+Legal Proceedings and Case Structuring​
+ALLY aligns user-submitted concerns with structured legal workflow stages to support 
+organized case handling. These stages may include initial inquiry, legal concern classification, 
+document preparation, practitioner review, consultation scheduling, case progress tracking, 
+and closure or archival. The system helps users understand the general procedural flow of 
+their concerns while ensuring that formal legal decisions remain under the authority of 
+qualified legal practitioners. 
+Shared Workspaces and Collaboration Features​
+The system provides secure, role-based shared workspaces for collaboration between clients, 
+legal practitioners, and authorized personnel. These workspaces support controlled document 
+access, secure communication, task coordination, case updates, and centralized case 
+handling to reduce fragmented communication and improve workflow efficiency. 
+Detailed Documentation and Audit Trail Features​
+ALLY maintains comprehensive records of significant system activities, including user 
+interactions, AI query submissions, retrieved legal sources, document uploads, document 
+modifications, case updates, and administrative actions. These audit trails support 
+transparency, traceability, accountability, and compliance monitoring for both users and 
+system administrators. 
+Data Privacy, Security, and Compliance​
+ALLY enforces strict data protection measures, including secure authentication, role-based 
+access control, encryption, protected data storage, activity monitoring, and secure API 
+access. The platform is designed to comply with the Data Privacy Act of 2012 and applicable 
+legal ethics standards to ensure the confidentiality, integrity, and proper handling of sensitive 
+legal and personal information. 
+ 
+ 
+ 
+ 
+Page 5 of 96 
+ 
+
+--- PAGE 6 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Constraints and Limitations 
+Functional Constraints​
+The platform provides AI-assisted preliminary legal information and structured workflow 
+support but does not replace licensed legal professionals, courts, or official legal institutions. 
+AI-generated outputs are limited to informational and preparatory use and must be reviewed 
+or validated by qualified legal practitioners before being used for formal legal decisions or 
+actions. The system supports case organization, documentation, and collaboration but does 
+not directly represent users, file cases, or execute formal legal proceedings on their behalf. 
+Technical Constraints​
+Core platform features require a stable internet connection for full functionality. System 
+performance may vary depending on user load, network conditions, hosting resources, and 
+external service availability. Integration with legal APIs and third-party services depends on 
+the availability, reliability, access policies, and technical limitations of those providers. 
+Operational Constraints​
+Advanced AI optimization, legal dataset expansion, API integration, and collaboration features 
+are dependent on available development resources and phased implementation. Some 
+features may be introduced incrementally through future updates, especially those requiring 
+external legal data access, advanced model evaluation, or institutional participation. 
+Legal and Regulatory Constraints​
+The platform must comply with Philippine data privacy laws, legal practice regulations, and 
+ethical standards governing legal professionals. All system functionalities must be designed to 
+prevent unauthorized practice of law, misuse of legal information, unauthorized access to 
+sensitive records, and improper handling of personal or legal data. 
+ 
+1.3. ​ Definitions, Acronyms and Abbreviations 
+Technical and Web Terminologies 
+●​ AI (Artificial Intelligence) – Technology that enables computer systems to perform 
+tasks that typically require human intelligence, such as language understanding, 
+contextual analysis, pattern recognition, and decision support. 
+●​ AI-Assisted Legal Inquiry – A system feature that uses artificial intelligence and 
+ 
+ 
+Page 6 of 96 
+ 
+
+--- PAGE 7 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+contextual retrieval mechanisms to process and respond to preliminary legal questions 
+using Philippine legal references. 
+●​ API (Application Programming Interface) – A set of protocols and tools that allow 
+different software applications or services to communicate and exchange data. 
+●​ Audit Trail – A chronological log of system events, user activities, document 
+modifications, and transactions used for accountability, transparency, and monitoring 
+purposes. 
+●​ Backend – The server-side component responsible for business logic, data 
+processing, authentication, API handling, and communication with the database. 
+●​ Case Management – The process of organizing, tracking, updating, and managing 
+legal concerns, proceedings, schedules, and case-related documents within the 
+system. 
+●​ Client-Server Architecture – A software architecture where client devices interact 
+with centralized servers that process requests, manage data, and provide services. 
+●​ Cloud-Based Services – Internet-hosted services and infrastructure used for data 
+storage, communication, collaboration, and scalable system operations. 
+●​ Collaborative Workspace – A secure shared digital environment that enables 
+communication, coordination, document sharing, and workflow collaboration between 
+users. 
+●​ Contextual Guardrails – Restrictions and intent-classification mechanisms 
+implemented within AI systems to ensure responses remain relevant, safe, and limited 
+to the legal domain. 
+●​ Database – A structured collection of electronically stored data that allows efficient 
+retrieval, modification, organization, and management of information. 
+●​ Data Encryption – The process of converting sensitive data into a protected format to 
+prevent unauthorized access during storage or transmission. 
+●​ DPA (Data Privacy Act of 2012) – Philippine law governing the protection, handling, 
+processing, and security of personal data and sensitive personal information. 
+●​ Frontend – The client-side component responsible for the graphical user interface, 
+ 
+ 
+Page 7 of 96 
+ 
+
+--- PAGE 8 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+user interactions, and presentation of system information. 
+●​ Functional Requirements – Specifications describing the functions, features, and 
+operations that the system must perform. 
+●​ HTTPS (Hypertext Transfer Protocol Secure) – A secure communication protocol 
+that encrypts data transmitted between users and web servers. 
+●​ JWT (JSON Web Token) – A token-based authentication mechanism used to securely 
+verify and manage user sessions. 
+●​ Legal APIs – External APIs that provide access to legal references, statutes, 
+jurisprudence, and legal datasets. 
+●​ MVP (Minimum Viable Product) – The initial functional version of a system containing 
+only the essential features required for deployment, evaluation, and validation. 
+●​ Non-Functional Requirements – Specifications that define system quality attributes 
+such as security, performance, reliability, scalability, and usability. 
+●​ OAuth 2.0 – An industry-standard authorization framework used for secure 
+authentication and controlled access to system resources. 
+●​ PDF (Portable Document Format) – A commonly used file format for presenting and 
+exchanging digital documents consistently across devices. 
+●​ PostgreSQL – An open-source relational database management system used for 
+storing, organizing, and managing structured application data. 
+●​ QA (Quality Assurance) – The process of evaluating and testing the system to ensure 
+compliance with defined requirements and quality standards. 
+●​ RBAC (Role-Based Access Control) – A security mechanism that restricts user 
+access to system functions and resources based on assigned roles and permissions. 
+●​ Real-Time Communication – A system capability that enables immediate exchange 
+of messages, notifications, and updates between users. 
+●​ RESTful API – An API architecture that follows Representational State Transfer 
+(REST) principles for standardized communication between systems. 
+ 
+ 
+Page 8 of 96 
+ 
+
+--- PAGE 9 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Semantic Analysis – A computational method used to analyze the meaning, intent, 
+and context of user queries for more accurate AI-generated responses. 
+●​ Secure Authentication – The process of verifying user identity using protected login 
+mechanisms, tokens, or authorization protocols. 
+●​ SPI (Sensitive Personal Information) – A category of personal data that requires 
+heightened protection under the Data Privacy Act, including financial, personal, health, 
+and identifying information. 
+●​ Spring Boot – A Java-based backend development framework used for creating 
+scalable, production-ready, and modular web applications. 
+●​ SQL (Structured Query Language) – A standard programming language used to 
+manage, retrieve, and manipulate data in relational database systems. 
+●​ Supabase – An open-source Backend-as-a-Service (BaaS) platform providing 
+PostgreSQL databases, authentication, APIs, file storage, and real-time features for 
+web and mobile applications. 
+●​ Supplementary Legal Support System – A platform designed to provide preliminary 
+legal assistance and workflow support without replacing licensed legal professionals or 
+formal legal institutions. 
+●​ TLS (Transport Layer Security) – A cryptographic protocol used to secure data 
+transmission over computer networks. 
+●​ UAT (User Acceptance Testing) – A testing process where intended users evaluate 
+the system to determine whether it satisfies functional and usability requirements. 
+●​ UI/UX (User Interface/User Experience) – The visual design, interaction flow, 
+accessibility, and overall usability experience provided to users. 
+●​ Version Control – A method of tracking and managing changes made to documents, 
+files, or source code over time. 
+●​ Wireframes – Visual representations or interface layouts that illustrate the structure, 
+navigation, and design of the system before implementation. 
+Legal and Civil Terminologies 
+ 
+ 
+Page 9 of 96 
+ 
+
+--- PAGE 10 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Affidavit – A written statement voluntarily made under oath and used as evidence in 
+legal proceedings. 
+●​ Appeal – A legal process in which a party requests a higher court to review and 
+possibly reverse a lower court’s decision. 
+●​ Case Proceeding – The sequence of legal processes and activities involved in 
+handling a legal case from initiation to resolution. 
+●​ Civil Case – A legal dispute between individuals, organizations, or entities involving 
+private rights, obligations, or compensation rather than criminal offenses. 
+●​ Complainant – A person or party who files a legal complaint or initiates a legal action 
+against another party. 
+●​ Confidentiality – The obligation to protect sensitive legal, personal, or case-related 
+information from unauthorized disclosure. 
+●​ Consultation – An interaction between a client and a legal professional for the 
+purpose of obtaining legal guidance or clarification. 
+●​ Defendant – A person, group, or entity against whom a legal action or complaint is 
+filed. 
+●​ Dispute Resolution – Processes or methods used to resolve legal disagreements or 
+conflicts between parties, including negotiation, mediation, or court proceedings. 
+●​ Evidence – Documents, records, statements, or materials presented to support or 
+disprove claims in a legal matter. 
+●​ Jurisprudence – Court decisions and legal principles established through judicial 
+rulings that are used as references in interpreting laws. 
+●​ Legal Concern – A legal issue, question, or matter submitted by a user for preliminary 
+guidance or assistance. 
+●​ Legal Practitioner – A licensed lawyer or legal professional authorized to provide 
+legal services and representation. 
+●​ Litigation – The process of taking legal action or resolving disputes through court 
+proceedings. 
+ 
+ 
+Page 10 of 96 
+ 
+
+--- PAGE 11 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Plaintiff – The individual or party who initiates a civil lawsuit against another party. 
+●​ Preliminary Legal Guidance – Initial legal information or assistance intended to help 
+users better understand legal matters before obtaining formal legal representation. 
+●​ Role-Based Permissions – Access limitations assigned according to the 
+responsibilities and authority of different users within the system. 
+●​ Statutory Law – Laws formally enacted by legislative bodies such as the Philippine 
+Congress. 
+●​ Subpoena – A legal order requiring an individual to appear in court or provide 
+documents or evidence. 
+●​ Terms and Conditions – Rules, responsibilities, and agreements governing the use of 
+the platform and its services. 
+●​ User Consent – Permission voluntarily provided by users allowing the system to 
+process and manage their information in compliance with privacy laws. 
+●​ Verification – The process of confirming the identity, credentials, or authenticity of 
+users or submitted information. 
+ 
+1.4. ​ References 
+●​ [1] World Bank, “The Global Findex Database 2025: Connectivity and Financial 
+Inclusion in the Digital Economy,” Accessed: https://openknowledge.worldbank.org. 
+●​ [2] S. Y. Jakaria, “The Philippine Digital Paradox: Challenges, Opportunities, and the 
+Way Forward,” Accessed: https://digital.car.chula.ac.th. 
+●​ [3] M. O. Iwayama and M. A. M. Quintos, “An Analysis of the Experiences of Lawyers 
+Handling Criminal Law Cases within the Philippine Court System through a Weberian 
+Lens,” Accessed: https://publishing.pup.edu.ph. 
+●​ [4] Inderscience, “Enhancing Access to Justice Through Chatbot Technology: On the 
+Effectiveness of Artificial Intelligence in the Delivery of Legal Services,” Accessed: 
+https://www.inderscienceonline.com. 
+ 
+ 
+ 
+Page 11 of 96 
+ 
+
+--- PAGE 12 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ [5] IEEE Xplore, “Evaluating Hallucinations in Large Language Models (LLM): Metrics 
+and Mitigation,” Accessed: https://ieeexplore.ieee.org. 
+●​ [6] MDPI, “Innovative Guardrails for Generative AI: Designing an Intelligent Filter for 
+Safe and Responsible LLM Deployment,” Accessed: https://www.mdpi.com. 
+●​ [7] PMC, “GPT, Ontology, and CAABAC: A Tripartite Personalized Access Control 
+Model Anchored by Compliance, Context and Attribute,” Accessed: 
+https://pmc.ncbi.nlm.nih.gov. 
+●​ [8] DPA, “Law & Compliance in AI Security & Data Protection,” Accessed: 
+https://www.dpa.gr. 
+●​ [9] B. Olosunde, “Recent Trends in Agile Software Development in 2024,” Accessed: 
+https://www.babatopeolosunde.com. 
+●​ [10] Ejournals.ph, “Judicial Court Information Management System (J-CIMS) for 
+Regional Trial Court in the Philippines,” Accessed: https://ejournals.ph. 
+●​ [11] Atlantis Press, “SellMyTicket: A Secure and User-Centric Web Platform for Event 
+Ticket Resale,” Accessed: https://www.atlantis-press.com. 
+●​ [12] Frontiers in Artificial Intelligence, “Both Ends of Artificial Intelligence Impacting 
+Privacy: A Review of Violation and Protection,” Accessed: https://www.frontiersin.org. 
+●​ [13] PMC, “Large Language Models for Health Care Text Classification: Systematic 
+Review,” Accessed: https://pmc.ncbi.nlm.nih.gov. 
+●​ [14] JMIR Formative Research, “Implementation, Acceptability, and Actions After Using 
+an AI Workplace Health Kiosk in a Low-Resource Public School Workplace Setting: 
+Cross-Sectional Pilot Study,” Accessed: https://formative.jmir.org. 
+●​ [15] Journal EIA, “Features and Benefits of Document Management Systems,” 
+Accessed: https://eia.feaa.ugal.ro. 
+●​ [16] M. Liu et al., “Domain Generalizable AI Guardrails with Augmented Policy 
+Training,” Accessed: https://mqianliu.github.io. 
+●​ [17] M. Liu et al., “LLM Can be a Dangerous Persuader: Empirical Study of Persuasion 
+Safety in Large Language Models,” Accessed: https://mqianliu.github.io. 
+●​ [18] SMU, “Regulatory Approaches to Consumer Protection in the Financial Sector and 
+Beyond: Toward a Smart Disclosure Regime?,” Accessed: 
+https://ink.library.smu.edu.sg. 
+ 
+ 
+Page 12 of 96 
+ 
+
+--- PAGE 13 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ [19] Z. Xu et al., “Modality-Specialized Synergizers for Interleaved Vision-Language 
+Generalists,” Accessed: https://mqianliu.github.io. 
+●​ [20] M. Liu et al., “Holistic Evaluation for Interleaved Text-and-Image Generation,” 
+Accessed: https://mqianliu.github.io. 
+●​ [21] M. Liu et al., “X-Eval: Generalizable Multi-aspect Text Evaluation via Augmented 
+Instruction Tuning with Auxiliary Evaluation Aspects,” Accessed: 
+https://mqianliu.github.io. 
+●​ [22] IJSAT, “Solid Waste Management Practices and Profitability Among Santa Rosa 
+Market Vendors: Basis for Restructuring Program,” Accessed: https://www.ijsat.org. 
+●​ [23] X. Fu et al., “ReFocus: Visual Editing as a Chain of Thought for Structured Image 
+Understanding,” Accessed: https://mqianliu.github.io. 
+●​ [24] UN Women, “Progress on the Sustainable Development Goals: The Gender 
+Snapshot 2025,” Accessed: https://www.unwomen.org. 
+●​ [25] J. Qi et al., “MultiSript: Multimodal Script Learning for Supporting Open Domain 
+Everyday Tasks,” Accessed: https://mqianliu.github.io. 
+ 
+ 
+ 
+ 
+ 
+Page 13 of 96 
+ 
+
+--- PAGE 14 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+2. ​Overall Description 
+2.1. ​ Product perspective 
+​
+ALLY is an AI-enhanced legal assistance and workflow management platform 
+designed to improve access to preliminary legal information and streamline legal collaboration 
+within the Philippine legal context. The platform serves as a supplementary legal support 
+system that assists citizens and legal practitioners by providing accessible, organized, and 
+secure digital legal services without replacing formal legal institutions, courts, or professional 
+legal representation. 
+The system simplifies the process of obtaining preliminary legal assistance by integrating 
+artificial intelligence, contextual legal retrieval mechanisms, and verified Philippine legal 
+datasets. Through AI-assisted legal inquiry and domain-restricted legal intelligence, users can 
+receive relevant legal information based on Philippine laws, jurisprudence, statutory 
+references, and related legal materials. To reduce irrelevant or out-of-scope responses, the 
+platform applies intent classification and contextual guardrails that restrict AI-generated 
+outputs to supported legal topics. 
+ALLY integrates multiple technologies and external services to support its functionality. These 
+include AI-driven legal assistance, semantic analysis, legal APIs or curated legal repositories 
+for legal data retrieval, secure authentication using JSON Web Tokens (JWT), role-based 
+access control (RBAC), encrypted communication protocols, cloud-based collaboration tools, 
+and secure database systems for legal case and document management. 
+The platform follows a secure client-server web architecture and is accessible through 
+modern desktop and mobile web browsers. The system consists of several major 
+components, including: 
+●​ User authentication and role-based profile management 
+●​ Domain-restricted AI legal inquiry and legal reference retrieval 
+●​ Secure legal case and proceedings workflow management 
+●​ Document organization and centralized file handling 
+●​ Shared legal workspaces and real-time communication tools 
+●​ Automated documentation and immutable audit trail logging 
+●​ Administrative monitoring, security, compliance, and user management 
+The platform is intended for Filipino citizens seeking preliminary legal information, verified 
+legal practitioners managing legal concerns and proceedings, and system administrators 
+responsible for maintaining system operations, security, compliance, and audit monitoring. 
+Overall, ALLY aims to improve accessibility, efficiency, transparency, and security in legal 
+workflows while supporting secure collaboration and organized digital legal processes. 
+ 
+ 
+Page 14 of 96 
+ 
+
+--- PAGE 15 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+2.2. ​ User characteristics 
+Clients 
+-​
+Role: Individuals seeking preliminary legal guidance, legal support, and assistance 
+with legal concerns within the Philippine legal context.  
+-​
+Privileges: Can create accounts, submit legal concerns and case-related information, 
+upload legal documents, access AI-assisted legal inquiry services, communicate with 
+legal practitioners, and track legal proceedings and case progress.  
+-​
+Characteristics: Users seeking accessible, organized, and secure legal assistance 
+within the Philippine legal context who may or may not be familiar with legal knowledge 
+and technical proficiency.   
+Legal Professionals 
+-​
+Role: Verified legal professionals providing legal assistance and managing legal 
+proceedings within the platform.  
+-​
+Privileges: Can review legal concerns and case submissions, access legal 
+documents, communicate and collaborate with clients, manage legal workflows and 
+schedules, and utilize AI-assisted legal support tools.   
+-​
+Characteristics: Possess legal expertise and professional experience in the field, 
+however some may possess different levels of proficiency in terms of technical 
+processes, technologies, and AI-assisted technologies.  
+System Administrators 
+-​
+Role: Authorized personnel responsible for managing, monitoring, and maintaining the 
+ALLY platform.  
+-​
+Privileges: Can manage user accounts and permissions, monitor audit trails and 
+system activities, maintain platform resources, oversee security protocols, and ensure 
+system integrity and compliance.  
+-​
+Characteristics: Individuals who are knowledgeable with the legal processes and 
+technical expertise in the technology fields as they’re responsible for technical 
+maintenance, security management, and administrative operations of the platform.  
+Anonymized Users 
+-​
+Role: Individuals accessing the platform without verified accounts to obtain preliminary 
+legal information or assistance.  
+ 
+ 
+Page 15 of 96 
+ 
+
+--- PAGE 16 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+-​
+Privileges: Can access limited legal inquiry features and publicly available legal 
+resources provided by the system.   
+-​
+Characteristics: Individuals who seek preliminary legal guidance while exercising 
+caution by remaining as anonymous guests. 
+2.4. ​ Constraints 
+Regulatory Policies 
+●​ The system shall comply with the Data Privacy Act of 2012 and other applicable 
+Philippine data protection regulations. 
+●​ The platform shall adhere to established legal practice standards and ethical 
+guidelines, ensuring that it does not provide formal legal advice. 
+●​ The system shall follow accepted digital security standards for handling sensitive legal 
+and personal information. 
+●​ The AI-assisted legal inquiry module shall provide only preliminary legal guidance 
+based on Philippine legal references and shall implement domain-restricted guardrails 
+to minimize out-of-scope responses.  
+●​ The platform shall operate strictly as a supplementary legal assistance and workflow 
+management system and shall not replace formal legal institutions or licensed legal 
+representation.  
+Hardware Limitations 
+●​ The system shall operate under varying internet connectivity conditions commonly 
+experienced within the Philippines.  
+●​ Backend infrastructure shall support moderate concurrent user activity without 
+significant degradation in system performance. . 
+●​ The web application shall be optimized to function on a wide range of desktop and 
+laptop devices, including those with limited processing capabilities. 
+Interface Requirements 
+●​ The platform shall support integration with internal document management 
+functionalities for organizing and retrieving legal files. 
+●​ The system shall be compatible with commonly used legal document formats (e.g., 
+PDF, DOCX, TXT). 
+ 
+ 
+Page 16 of 96 
+ 
+
+--- PAGE 17 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ The platform shall provide responsive web interfaces accessible through modern 
+desktop and mobile web browsers.  
+●​ The system shall provide RESTful APIs to support potential future integrations with 
+external legal or administrative systems. 
+Security Considerations 
+●​ All client-server communications shall be secured using HTTPS with TLS encryption.  
+●​ User authentication shall utilize secure login mechanisms, JSON Web Tokens (JWT), 
+and role-based access control (RBAC).  
+●​ Sensitive legal information, uploaded documents, and user records shall be securely 
+stored using protected backend database systems.  
+Reliability Requirements 
+●​ The system shall target high availability and stable operation depending on hosting 
+infrastructure and external service availability. 
+●​ Regular backup mechanisms shall be implemented to reduce the risk of legal 
+document and data loss.  
+●​ The system shall include fault-tolerance measures for critical components such as 
+authentication, legal inquiry processing, and case data retrieval.  
+●​ Integrated AI and legal data services may affect system response times depending on 
+external service performance.  
+Audit Functions 
+●​ The system shall implement automated logging of significant user actions, legal 
+transactions, and system activities for monitoring and accountability purposes.  
+●​ Audit trail mechanisms shall support traceability of document modifications, legal 
+workflow activities, and administrative actions.  
+●​ Audit trails for tracking system actions may be included as a future enhancement. 
+Control Functions 
+●​ Access to system modules and features shall be controlled through role-based 
+permissions for clients, legal practitioners, and administrators.  
+●​ Administrative users shall have authority to manage user accounts, monitor system 
+activities, and maintain platform resources.  
+ 
+ 
+Page 17 of 96 
+ 
+
+--- PAGE 18 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Version control and historical tracking of uploaded legal documents may be 
+implemented in future system enhancements.  
+Accessibility Requirements 
+●​ The user interface shall be designed to be simple, organized, and accessible to users 
+with varying levels of technical knowledge.  
+●​ The platform shall prioritize usability and accessibility for citizens seeking preliminary 
+legal assistance.  
+●​ Additional multilingual support and accessibility features may be considered in future 
+versions of the system.  
+ 
+2.5. ​ Assumptions and dependencies 
+Technical Assumptions 
+●​ Users are assumed to have stable internet access sufficient to utilize the platform’s 
+web-based features. 
+●​ The selected backend infrastructure (e.g., cloud-based services such as Supabase or 
+equivalent technologies) is assumed to meet the system’s requirements for 
+performance, scalability, and data management. 
+●​ Token-based authentication (e.g., JWT) is assumed to provide secure and efficient 
+user authentication and session management. 
+Legal Environment Assumptions 
+●​ The existing Philippine legal framework permits the use of digital platforms for 
+preliminary legal information and consultation support. 
+●​ Legal professionals and institutions are assumed to be open to participating in or 
+supporting digital systems for legal information access and case-related workflows. 
+●​ Digital documents and electronically stored records are assumed to be acceptable for 
+reference and documentation purposes, subject to applicable laws and regulations. 
+User Behavior Assumptions 
+●​ Users are willing to input and manage legal-related information within the platform, 
+provided that adequate data privacy and security measures are in place. 
+ 
+ 
+Page 18 of 96 
+ 
+
+--- PAGE 19 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Users are expected to use the platform for informational and organizational purposes, 
+not as a substitute for professional legal advice. 
+●​ There is an existing demand for accessible, user-friendly legal information systems 
+among individuals with limited access to traditional legal services. 
+Dependencies 
+●​ Availability and reliability of cloud infrastructure and hosting services required to run 
+the platform. 
+●​ Continued access to accurate and up-to-date Philippine legal information, including 
+case references and legal materials. 
+●​ Stability of regulatory policies governing digital platforms, data privacy, and legal 
+information systems, including compliance with the Data Privacy Act of 2012. 
+●​ Optional collaboration or support from legal professionals or institutions to enhance the 
+platform’s relevance and usability. 
+ 
+ 
+ 
+Page 19 of 96 
+ 
+
+--- PAGE 20 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+3. ​Specific Requirements  
+ 
+3.1. ​ External interface requirements 
+3.1.1.​ Hardware interfaces 
+​
+The platform will be designed for cross-device accessibility, ensuring compatibility 
+across a wide range of hardware environments. Users will be able to access the system 
+seamlessly through smartphones, tablets, laptops, and desktop computers without loss of 
+functionality or performance. 
+The application will be implemented as a responsive web-based system, optimized for 
+different screen sizes and mobile devices to ensure usability across various smartphone 
+models and operating systems. The backend infrastructure will be deployed on cloud-based 
+servers to support scalability, reliability, and efficient resource management, with 
+containerized deployment managed through Docker. 
+For secure access across devices, the system will implement JWT-based 
+authentication alongside Google OAuth integration, ensuring both security and flexibility in 
+user login across supported platforms. 
+3.1.2.​ Software interfaces 
+The system will integrate multiple software technologies to ensure flexibility, scalability, 
+and secure operation across all platform features. 
+Authentication & Authorization:​
+​
+User authentication will be managed through Spring Boot’s built-in security framework, 
+combined with JSON Web Tokens (JWT) for session handling. Additionally, Google OAuth will 
+be implemented to support secure social login functionality. 
+Database Management:​
+​
+Supabase will be utilized as the primary database solution for structured data storage, 
+including user profiles, case records, and other system-related information, ensuring efficient 
+data handling and scalability. 
+Legal Document Management:​
+​
+Firebase will be integrated to handle secure file storage and retrieval. This will allow 
+users and legal practitioners to upload, access, and manage legal documents through a 
+cloud-based storage system. 
+API Integration:​
+​
+The system will use RESTful APIs to facilitate communication between the frontend 
+and backend components. This architecture also allows for future integration with external 
+ 
+ 
+Page 20 of 96 
+ 
+
+--- PAGE 21 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+services and third-party systems. 
+ 
+3.1.3.​ Communications interfaces 
+The system supports multiple communication protocols and security mechanisms to 
+ensure the privacy, confidentiality, and integrity of user data: 
+Authentication and Authorization:​
+​
+The platform implements OAuth 2.0 for secure user authentication and utilizes JSON 
+Web Tokens (JWT) for session management. These mechanisms enforce strict access 
+control, ensuring that only authorized users can access protected resources while maintaining 
+data integrity across the application. 
+Real-Time Messaging:​
+​
+Real-time communication is facilitated through Firebase Firestore, enabling dynamic 
+and responsive messaging between users. The system is designed for scalability and 
+low-latency message delivery, with provisions for additional encryption layers to further 
+enhance message confidentiality in future iterations. 
+Email Notifications:​
+​
+The platform uses Simple Mail Transfer Protocol (SMTP) to handle email notifications, 
+including account verification and system updates. This ensures that users receive timely and 
+secure alerts regarding important activities and actions within the system. 
+Protected API Access:​
+​
+All backend API endpoints are secured באמצעות JWT-based authentication. This 
+ensures that only verified and authorized users can access system services, preventing 
+unauthorized access to sensitive data and operations. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Page 21 of 96 
+ 
+
+--- PAGE 22 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+ 
+ 
+3.2. ​ Functional requirements 
+ 
+Module 1 
+1.1 Submit Legal Query  
+ 
+Use Case Diagram 
+ 
+ 
+Use Case Description​
+ 
+ 
+ 
+Use Case Name 
+Submit Legal Query  
+ 
+Actor 
+User  
+Preconditions 
+- User is registered and authenticated in the 
+platform 
+- User is aware of the legal query they want 
+to submit.  
+Postconditions 
+- Query is successfully submitted 
+- AI provides preliminary legal guidance 
+- All actions are logged in the audit trail for 
+traceability.  
+MainFlow 
+1. User logs into the platform. 
+2. User navigates to the 'Submit Legal 
+Query' module. 
+ 
+ 
+Page 22 of 96 
+ 
+
+--- PAGE 23 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+3. User enters query details. 
+4. System validates the query. 
+5. If valid, AI Legal Assistant analyzes 
+the query. 
+6. System generates preliminary legal 
+advice. 
+7. System logs all actions in the audit 
+trail. 
+8. User views AI response and optionally 
+schedules consultation.  
+ 
+ 
+ 
+ 
+ 
+Page 23 of 96 
+ 
+
+--- PAGE 24 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Activity Diagram 
+ 
+ 
+●​ Wireframe 
+ 
+ 
+ 
+Page 24 of 96 
+ 
+
+--- PAGE 25 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+1.2 Improve legal concern classification accuracy 
+ 
+Use Case Diagram 
+ 
+ 
+Use Case Description 
+ 
+Use Case Name 
+Improve legal concern classification 
+accuracy 
+ 
+Actor 
+System Admin / Developer, AI Legal 
+Assistant  
+Preconditions 
+- AI module is deployed and operational. 
+- Legal datasets (Philippine laws, 
+jurisprudence, case references) are 
+available. 
+- System has defined initial intent 
+classifications and guardrails. 
+- Admin has access rights to train and 
+update AI models.  
+Postconditions 
+- AI model shows improved classification 
+accuracy for legal queries. 
+- Reduced out-of-scope or irrelevant 
+responses. 
+- Updated AI weights and datasets are 
+logged and version-controlled. 
+- System audit trail records all model training 
+and evaluation actions.  
+MainFlow 
+1. Admin gathers updated legal datasets 
+and user query logs. 
+2. Admin preprocesses and labels data 
+ 
+ 
+Page 25 of 96 
+ 
+
+--- PAGE 26 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+for classification training. 
+3. Admin initiates AI model retraining. 
+4. AI Legal Assistant processes data and 
+updates classification model. 
+5. System evaluates performance 
+metrics (accuracy, precision, recall). 
+6. Admin reviews evaluation report and 
+deploys updated model. 
+7. System logs all training and update 
+activities in the audit trail. 
+8. Improved model is now available for 
+real-time query classification. 
+ 
+ 
+ 
+ 
+Page 26 of 96 
+ 
+
+--- PAGE 27 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Activity Diagram 
+ 
+ 
+●​ Wireframe 
+ 
+ 
+ 
+Page 27 of 96 
+ 
+
+--- PAGE 28 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+1.3 Enhance case relevance matching 
+●​
+Use Case Diagram 
+ 
+ 
+●​
+Use Case Description 
+ 
+Use Case Name 
+Enhance Case Relevance Matching 
+ 
+Actor 
+AI Legal Assistant, User / Citizen, Legal 
+Practitioner  
+Preconditions 
+- User has submitted a legal query. 
+- AI module is trained on Philippine statutes, 
+jurisprudence, and case datasets. 
+- Legal database is updated and accessible. 
+- System audit logging is active.  
+Postconditions 
+- AI provides highly relevant case 
+suggestions. 
+- Users can access matching cases to guide 
+their legal understanding. 
+- System logs query and retrieval results in 
+the audit trail. 
+- Legal practitioners can review and 
+annotate retrieved cases.  
+MainFlow 
+1. User submits a legal query. 
+2. AI Legal Assistant analyzes query 
+context. 
+3. AI performs semantic analysis to 
+match query with relevant cases. 
+4. System ranks cases based on 
+ 
+ 
+Page 28 of 96 
+ 
+
+--- PAGE 29 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+relevance score. 
+5. User views the matched cases. 
+6. User optionally requests consultation 
+with a legal practitioner. 
+7. Legal Practitioner reviews matched 
+cases in the collaborative workspace. 
+8. System logs all retrievals and actions 
+in the audit trail.  
+ 
+●​
+Activity Diagram 
+ 
+ 
+●​
+Wireframe 
+ 
+ 
+ 
+Page 29 of 96 
+ 
+
+--- PAGE 30 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+1.4 Refine AI-generated legal guidance  
+●​
+Use Case Diagram 
+ 
+ 
+●​
+Use Case Description 
+ 
+Use Case Name 
+Refine AI-generated legal guidance 
+ 
+Actor 
+AI Legal Assistant, Legal Practitioner, 
+System Admin / Developer 
+Preconditions 
+ 
+ 
+ 
+- User has submitted a legal query. 
+- Initial AI-generated legal guidance is 
+available. 
+- AI module has access to updated 
+Philippine legal datasets. 
+- System audit logging is active. 
+- Legal Practitioner is available for review 
+if needed. 
+ 
+Postconditions 
+ 
+ 
+ 
+- AI-generated guidance is refined to 
+increase accuracy and context 
+relevance. 
+- Out-of-scope or irrelevant responses are 
+minimized. 
+ 
+ 
+Page 30 of 96 
+ 
+
+--- PAGE 31 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+- Updated guidance is logged in the audit 
+trail. 
+- Refined guidance is available to the user 
+in the collaborative workspace. 
+ 
+MainFlow 
+ 
+ 
+1. AI generates preliminary legal 
+guidance based on user query. 
+2. System evaluates guidance using 
+intent classification and contextual 
+guardrails. 
+3. Admin or AI retrains or adjusts 
+parameters if necessary. 
+4. Legal Practitioner reviews refined 
+guidance for validation. 
+5. Refined guidance is presented to the 
+user. 
+6. System logs all refinement and 
+review actions in the audit trail. 
+ 
+ 
+ 
+ 
+ 
+Page 31 of 96 
+ 
+
+--- PAGE 32 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Activity Diagram 
+ 
+ 
+●​
+Wireframe 
+ 
+ 
+ 
+Page 32 of 96 
+ 
+
+--- PAGE 33 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+1.5 Update and optimize model performance  
+●​
+Use Case Diagram 
+ 
+ 
+●​
+Use Case Description 
+ 
+Use Case Name 
+Update and optimize model performance 
+ 
+Actor 
+ 
+ 
+ 
+System Admin / Developer, AI Legal 
+Assistant 
+ 
+Preconditions 
+ 
+ 
+ 
+- AI model is deployed and operational. 
+- System collects historical user queries 
+and AI outputs. 
+- Legal datasets are up-to-date. 
+- Admin has access to model training and 
+deployment tools. 
+- System audit logging is enabled. 
+ 
+Postconditions 
+- AI model has improved performance 
+metrics (accuracy, precision, recall). 
+- Reduced out-of-scope responses. 
+- Updated model is deployed for live 
+queries. 
+- All updates, retraining steps, and 
+evaluations are logged in the audit 
+ 
+ 
+Page 33 of 96 
+ 
+
+--- PAGE 34 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+trail. 
+- Users experience more accurate 
+AI-generated legal guidance.  
+MainFlow 
+1. Admin collects user query logs and 
+AI-generated responses. 
+2. Admin evaluates AI performance 
+metrics. 
+3. AI module retrains using updated 
+datasets and refined parameters. 
+4. Performance metrics are recalculated 
+and validated. 
+5. If metrics meet thresholds, Admin 
+deploys the updated AI model. 
+6. System logs all updates, training, and 
+deployment actions. 
+7. AI model is now optimized for ongoing 
+user queries.  
+ 
+ 
+ 
+Page 34 of 96 
+ 
+
+--- PAGE 35 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Activity Diagram 
+ 
+ 
+●​
+Wireframe 
+ 
+​
+ 
+ 
+ 
+ 
+Page 35 of 96 
+ 
+
+--- PAGE 36 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Module 2 
+2.1 Retrieve Legal References  
+●​ Use Case Diagram 
+ 
+ 
+●​ Use Case Description 
+ 
+Use Case Name 
+Retrieve Legal References 
+ 
+Actor 
+ 
+ 
+ 
+User / Citizen, AI Legal Assistant, Legal 
+Practitioner 
+ 
+Preconditions 
+- User has submitted a legal query. 
+- AI Legal Assistant is operational and 
+connected to legal datasets and APIs. 
+- Database of Philippine statutes, 
+regulations, and jurisprudence is up-to-date. 
+- System audit logging is active.  
+Postconditions 
+ 
+ 
+ 
+- Relevant legal references (statutes, 
+cases, regulations) are retrieved and 
+displayed. 
+- References are ranked based on 
+relevance to user query. 
+ 
+ 
+Page 36 of 96 
+ 
+
+--- PAGE 37 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+- Retrieval actions are logged in the audit 
+trail. 
+- Legal Practitioner can access the same 
+references in collaborative workspace. 
+ 
+MainFlow 
+1. User submits a legal query. 
+2. AI Legal Assistant analyzes query 
+context. 
+3. AI queries legal datasets and APIs for 
+relevant statutes, cases, and 
+regulations. 
+4. System ranks references based on 
+semantic relevance and context. 
+5. Display retrieved references to user. 
+6. References are optionally shared with 
+Legal Practitioner for collaboration. 
+7. Log all retrieval and display actions in 
+the audit trail.  
+ 
+ 
+ 
+Page 37 of 96 
+ 
+
+--- PAGE 38 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Activity Diagram 
+ 
+ 
+●​ Wireframe 
+ 
+2.2 View Legal Sources  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+Page 38 of 96 
+ 
+
+--- PAGE 39 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Use Case Description 
+ 
+ 
+ 
+Page 39 of 96 
+ 
+
+--- PAGE 40 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Use Case Name 
+Secure Case and Proceedings Workflow 
+Actor 
+Client, Legal Professional, System 
+Scheduler 
+Preconditions 
+ Users must be authenticated and possess 
+authorized role-based permissions verified 
+via secure token-based authentication (JWT)  
+• Client must have a defined legal concern 
+prepared for submission into the portal. 
+Postconditions 
+• The legal inquiry is organized into 
+procedural workflows with an active tracking 
+status 
+• Case status updates, document links, and 
+scheduled appointments are successfully 
+committed to the database. 
+MainFlow 
+1. Client opens the management dashboard 
+and provides digital case details. 
+2. Client attaches associated legal files or 
+preliminary documentation to the 
+submission. 
+3. System handles backend data validation 
+and generates a unique tracking entry to 
+ 
+ 
+Page 40 of 96 
+ 
+
+--- PAGE 41 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+align with formal Philippine legal stages. 
+4. Legal Professional accesses their 
+dashboard queue to view the case materials. 
+5. Legal Professional approves the case 
+match, which automatically updates the 
+active case lifecycle state. 
+6. System updates the active case status, 
+triggers the scheduling interface, and checks 
+the availability calendar. 
+7. Legal Professional locks in a 
+consultation time with the client. 
+8. Both Client and Legal Professional track 
+proceeding milestones through sequential 
+dashboard status updates. 
+ 
+ 
+ 
+ 
+Page 41 of 96 
+ 
+
+--- PAGE 42 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Activity Diagram 
+ 
+ 
+ 
+Page 42 of 96 
+ 
+
+--- PAGE 43 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+ 
+2.3 Validate Source Availability  
+ 
+Use Case Diagram 
+ 
+ 
+Use Case Description 
+ 
+Use Case Name 
+Validate Source Availability 
+Actor 
+Citizen, External Legal API, System Administrator 
+Preconditions 
+• The core AI engine has drafted a response containing 
+ 
+ 
+Page 43 of 96 
+ 
+
+--- PAGE 44 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+structural references to Philippine law. 
+Postconditions 
+• Only active, reachable, and legally compliant source 
+material references are delivered to the interface. 
+MainFlow 
+1. System automatically intercepts the outbound AI 
+response payload prior to client-side delivery. 
+2. System processes the text strings to isolate citation 
+tags and external database paths. 
+3. System runs an automated connection check against 
+integrated legal APIs. 
+4. System confirms link vitality and injects the live, 
+secure reference links into the chat container. 
+5. System safely pulls reference backups from the 
+internal verified cache if an external API is offline or 
+returns a dead link. 
+ 
+ 
+ 
+Page 44 of 96 
+ 
+
+--- PAGE 45 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Activity Diagram 
+ 
+ 
+ 
+Page 45 of 96 
+ 
+
+--- PAGE 46 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+ 
+2.4 Update Legal Repository  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+Page 46 of 96 
+ 
+
+--- PAGE 47 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Use Case Description 
+ 
+Use Case Name 
+Update Legal Repository 
+Actor 
+System Administrator, System Database 
+Preconditions 
+• Administrator has successfully logged in with system 
+maintenance access privileges. 
+• New legal files (amendments, supreme court decisions) are 
+formatted cleanly. 
+Postconditions 
+• The platform’s localized knowledge repository is 
+successfully modernized and re-indexed. 
+MainFlow 
+1. Administrator authenticates into the backend dashboard 
+module. 
+2. Administrator selects and uploads new statutory law or 
+case dataset packages. 
+3. System handles document parsing, extracting relevant 
+strings, headers, and metadata. 
+4. System runs an operational integrity check to isolate and 
+remove any duplicate articles or files. 
+5. System encrypts raw text blocks at rest and commits them 
+to the live database layers. 
+ 
+ 
+ 
+Page 47 of 96 
+ 
+
+--- PAGE 48 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Activity Diagram 
+ 
+ 
+ 
+Page 48 of 96 
+ 
+
+--- PAGE 49 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+2.5 Flag Outdated or Missing Legal Source  
+ 
+Use Case Diagram 
+ 
+ 
+Use Case Description 
+ 
+Use Case Name 
+Flag Outdated or Missing Legal Source 
+ 
+ 
+Page 49 of 96 
+ 
+
+--- PAGE 50 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Actor 
+Citizen, Legal Professional, System Administrator 
+Preconditions 
+• User is actively viewing a citation reference card or source 
+document inside the UI. 
+Postconditions 
+• A ticket is permanently logged within the system audit 
+records for administrative triage. 
+• If validated, the outdated source is updated or removed 
+from active retrieval. 
+MainFlow 
+1. User reviews an AI response and spots a broken 
+reference link or a repealed law. 
+2. User clicks the "Flag Source" component adjacent to the 
+citation element. 
+3. User inputs specific parameters detailing the issue via a 
+modal interaction form. 
+4. System bundles user feedback data with current session 
+metadata and writes the ticket to the database. 
+5. Administrator reviews the queued ticket and deprecates 
+or updates the flagged source in the repository. 
+ 
+ 
+ 
+ 
+Page 50 of 96 
+ 
+
+--- PAGE 51 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Activity Diagram 
+ 
+ 
+ 
+Wireframe 
+ 
+ 
+ 
+Page 51 of 96 
+ 
+
+--- PAGE 52 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Module 3 
+ 
+3.1 Submit Legal Case  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Page 52 of 96 
+ 
+
+--- PAGE 53 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Use Case Description 
+ 
+Use Case Name 
+Submit Legal Case  
+Actor 
+Client, System Database  
+Preconditions 
+• Client is authenticated and logged into their account. 
+• Client has gathered the necessary details and documents 
+regarding their legal concern. 
+Postconditions 
+• A new case record is successfully created in the database with a 
+unique tracking ID. 
+• The case status is set to 'Pending Review' for legal professionals to 
+evaluate. 
+MainFlow 
+1. Client accesses the case submission portal from their dashboard. 
+2. Client fills out the structured form detailing the incident, parties 
+involved, and legal category. 
+3. Client securely uploads supporting evidence (e.g., PDFs, images, 
+text documents). 
+4. System validates the input fields for completeness and correct file 
+formatting. 
+5. System saves the record, assigns a unique case tracking ID, and 
+displays a success confirmation message to the Client. 
+ 
+ 
+ 
+ 
+Page 53 of 96 
+ 
+
+--- PAGE 54 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Activity Diagram 
+ 
+ 
+ 
+●​ Wireframe 
+ 
+ 
+ 
+Page 54 of 96 
+ 
+
+--- PAGE 55 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+3.2 Map Case to Legal Proceeding Stage  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+ 
+Use Case Description 
+ 
+Use Case Name 
+Map Case to Legal Proceeding Stage  
+ 
+ 
+Page 55 of 96 
+ 
+
+--- PAGE 56 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Actor 
+System AI Engine, Legal Professional  
+Preconditions 
+• A case has been successfully submitted and assigned a Case 
+Tracking ID. 
+• The system has access to standard Philippine legal procedural 
+templates (e.g., preliminary investigation, mediation, and trial). 
+Postconditions 
+• The case is successfully tethered to a structured timeline and 
+specific proceeding stage. 
+• Task templates are generated based on the mapped stage. 
+MainFlow 
+1. System AI Engine automatically extracts metadata (legal domain, 
+incident type) from the submitted case. 
+2. System AI Engine cross-references the data against standard 
+legal proceeding workflows. 
+3. System AI Engine maps the case to the appropriate stage and 
+assigns a default workflow template. 
+4. Legal Professional reviews the system-generated mapping in 
+their dashboard. 
+5. Legal Professional confirms the mapping or manually overrides 
+the stage to fit the specific nuances of the case. 
+6. System saves the finalized mapping to the database and 
+initializes the proceeding tracker. 
+ 
+ 
+ 
+Page 56 of 96 
+ 
+
+--- PAGE 57 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Activity Diagram 
+ 
+●​ Wireframe 
+ 
+ 
+Page 57 of 96 
+ 
+
+--- PAGE 58 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+3.3 Track Case Progress  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+ 
+ 
+Use Case Description 
+ 
+ 
+ 
+Page 58 of 96 
+ 
+
+--- PAGE 59 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+Page 59 of 96 
+ 
+Use Case Name 
+Track Case Progress 
+Actor 
+Client, Legal Professional, System Notifier 
+Preconditions 
+• A case is currently active and mapped to a specific legal proceeding 
+stage. 
+• Both Client and Legal Professional are authenticated into the 
+dashboard. 
+Postconditions 
+• The user is successfully informed of the current case standing and 
+upcoming deadlines. 
+• Tracking interactions are synced across the shared workspace. 
+MainFlow 
+1. User (Client or Legal Professional) selects an active case from their 
+dashboard overview. 
+2. System queries the database to retrieve the proceeding stage, 
+timeline data, and task completion metrics. 
+3. System renders a visual progression tracker, detailing completed 
+milestones and current status. 
+4. User reviews the active timeline, clicking specific nodes to read 
+detailed milestone logs or upcoming task deadlines. 
+5. System Notifier automatically dispatches email or in-app alerts if a 
+mileston changes state or a task approaches its deadline. 
+
+--- PAGE 60 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Activity Diagram 
+ 
+ 
+ 
+Page 60 of 96 
+ 
+
+--- PAGE 61 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+ 
+3.4 Manage Case Tasks  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+Use Case Description 
+ 
+ 
+Page 61 of 96 
+ 
+Use Case Name 
+Manage Case Tasks  
+
+--- PAGE 62 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+ 
+ 
+ 
+Activity Diagram 
+ 
+ 
+ 
+Page 62 of 96 
+ 
+Actor 
+Legal Professional, System Scheduler  
+Preconditions 
+• A legal case is currently active within the system. 
+• The Legal Professional is authenticated and assigned to the case. 
+Postconditions 
+• Task records are successfully created, updated, or marked as 
+complete. 
+• The system scheduler queues automated reminders for pending 
+deadlines. 
+MainFlow 
+1. Legal Professional accesses the task management tab within an 
+active case workspace. 
+2. Legal Professional creates a new task, inputting the description 
+and setting a specific deadline. 
+3. Legal Professional updates the status of existing tasks (e.g., 'Not 
+Started', 'In Progress', 'Completed'). 
+4. System commits the task updates to the centralized database and 
+syncs the shared workspace timeline. 
+5. System Scheduler continuously monitors task parameters and 
+automatically dispatches notifications when a deadline approaches or 
+is missed. 
+
+--- PAGE 63 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+ 
+ 
+●​ Wireframe 
+ 
+ 
+Page 63 of 96 
+ 
+
+--- PAGE 64 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+3.5 Close or Archive Case  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+Page 64 of 96 
+ 
+
+--- PAGE 65 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Use Case Description 
+ 
+ 
+ 
+Page 65 of 96 
+ 
+Use Case Name 
+Close or Archive Case  
+Actor 
+Legal Professional, System Archiver  
+Preconditions 
+• All legal proceedings, milestones, and pending tasks associated with 
+the active case are completed or formally terminated. 
+• The legal professional is authenticated and possesses authorization 
+to finalize the case. 
+Postconditions 
+• The case status is permanently updated to 'Closed' or 'Archived' 
+within the database. 
+• The shared collaborative workspace is locked to a read-only state for 
+both parties. 
+MainFlow 
+1. Legal Professional navigates to the settings panel of the active 
+case and initiates the closure process. 
+2. Legal Professional reviews a system-generated summary of the 
+case resolution to ensure all tasks are completed. 
+3. System generates a final consolidated documentation report 
+detailing all milestones, messages, and files. 
+4. System Archiver updates the database tracking status to 'Closed' 
+and strips write-access from the shared workspace. 
+ 
+
+--- PAGE 66 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+Activity Diagram 
+ 
+ 
+ 
+ 
+Page 66 of 96 
+ 
+5. System dispatches a formal notification to the Client's dashboard, 
+providing read-only access to the final case report. 
+ 
+
+--- PAGE 67 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+Module 4 
+4.1 Submit Legal Case  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+ 
+Page 67 of 96 
+ 
+
+--- PAGE 68 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Use Case Description 
+ 
+ 
+ 
+Page 68 of 96 
+ 
+Use Case Name 
+Submit Legal Case 
+Actor 
+Client, System Database 
+Preconditions 
+• Client is authenticated and logged into their account. 
+• Client has gathered the necessary details and documents regarding 
+their legal concern. 
+Postconditions 
+• A new case record is successfully created in the database with a 
+unique tracking ID. 
+• The case status is set to 'Pending Review' for legal professionals to 
+evaluate. 
+MainFlow 
+1. Client accesses the case submission portal from their dashboard. 
+2. Client fills out the structured form detailing the incident, parties 
+involved, and legal category. 
+3. Client securely uploads supporting evidence  
+4. System validates the input fields for completeness and correct file 
+formatting. 
+5. System saves the record, assigns a unique case tracking ID, and 
+
+--- PAGE 69 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Activity Diagram 
+ 
+ 
+ 
+ 
+Page 69 of 96 
+ 
+displays a success confirmation message to the client. 
+
+--- PAGE 70 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Wireframe 
+4.2 Map Case to Legal Proceeding Stage  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+ 
+Page 70 of 96 
+ 
+
+--- PAGE 71 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+Use Case Description 
+ 
+ 
+ 
+Page 71 of 96 
+ 
+Use Case Name 
+Map Case to Legal Proceeding Stage  
+Actor 
+System AI Engine, Legal Professional  
+Preconditions 
+• A case has been successfully submitted and assigned a Case 
+Tracking ID. 
+• The system has active access to standard Philippine legal procedural 
+templates (e.g., preliminary investigation, mediation, and trial). 
+Postconditions 
+• The case is successfully tethered to a structured timeline and specific 
+preceding stage. 
+• Task templates are generated based on the mapped workflow stage. 
+MainFlow 
+1. System AI Engine automatically extracts metadata (legal domain, 
+incident type) from the submitted case. 
+2. System AI Engine cross-references the data against standard legal 
+proceeding workflows. 
+3. System AI Engine maps the case to the appropriate stage and 
+assigns a default workflow template. 
+4. Legal Professional reviews the system-generated mapping via their 
+dashboard. 
+5. Legal Professional confirms the mapping or manually overrides the 
+stage to fit the specific nuances of the case. 
+
+--- PAGE 72 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Activity Diagram 
+ 
+ 
+ 
+ 
+ 
+Page 72 of 96 
+ 
+6. System saves the finalized mapping to the database and initializes 
+the proceeding tracker. 
+
+--- PAGE 73 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+ 
+4.3 Track Case Progress  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+ 
+Page 73 of 96 
+ 
+
+--- PAGE 74 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Use Case Description 
+ 
+ 
+ 
+Page 74 of 96 
+ 
+Use Case Name 
+Track Case Progress 
+Actor 
+Client, Legal Professional, System Notifier 
+Preconditions 
+• A case is currently active and mapped to a specific legal proceeding 
+stage. 
+• Both Client and Legal Professional are authenticated into the 
+dashboard. 
+Postconditions 
+• The user is successfully informed of the current case standing and 
+upcoming deadlines. 
+• Tracking interactions are synced across the shared workspace. 
+MainFlow 
+1. User (Client or Legal Professional) selects an active case from their 
+dashboard overview. 
+2. System queries the database to retrieve the proceeding stage, 
+timeline data, and task completion metrics. 
+3. System renders a visual progression tracker, detailing completed 
+milestones and current status. 
+4. User reviews the active timeline, clicking specific nodes to read 
+
+--- PAGE 75 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Activity Diagram 
+ 
+ 
+ 
+ 
+ 
+Page 75 of 96 
+ 
+detailed milestone logs or upcoming task deadlines. 
+5. System Notifier automatically dispatches email or in-app alerts if a 
+milestone changes state or a task approaches its deadline. 
+
+--- PAGE 76 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+ 
+4.4 Manage Case Tasks  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+Use Case Description 
+ 
+ 
+ 
+Page 76 of 96 
+ 
+Use Case Name 
+Manage Case Tasks 
+
+--- PAGE 77 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+Page 77 of 96 
+ 
+Actor 
+Legal Professional, System Scheduler 
+Preconditions 
+• A legal case is currently active within the system. 
+• The Legal Professional is authenticated and assigned to the case. 
+Postconditions 
+• Task records are successfully created, updated, or marked as 
+complete. 
+• The system scheduler queues automated reminders for pending 
+deadlines. 
+MainFlow 
+1. Legal Professional accesses the task management tab within an 
+active case workspace. 
+2. Legal Professional creates a new task, inputting the description 
+and setting a specific deadline. 
+3. Legal Professional updates the status of existing tasks (e.g., 'Not 
+Started', 'In Progress', 'Completed'). 
+4. System commits the task updates to the centralized database and 
+syncs the shared workspace timeline. 
+5. System Scheduler continuously monitors task parameters and 
+automatically dispatches notifications when a deadline approaches or 
+is missed. 
+
+--- PAGE 78 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+Activity Diagram 
+ 
+ 
+ 
+ 
+Page 78 of 96 
+ 
+
+--- PAGE 79 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+4.5 Close or Archive Case  
+ 
+Use Case Diagram 
+ 
+ 
+ 
+ 
+Page 79 of 96 
+ 
+
+--- PAGE 80 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+Use Case Description 
+ 
+ 
+ 
+Page 80 of 96 
+ 
+Use Case Name 
+Close or Archive Case 
+Actor 
+Legal Professional, System Archiver 
+Preconditions 
+• All legal proceedings, milestones, and pending tasks associated with 
+the active case are completed or formally terminated. 
+• The Legal Professional is authenticated and possesses authorization 
+to finalize the case. 
+Postconditions 
+• The case status is permanently updated to 'Closed' or 'Archived' 
+within the database. 
+• The shared collaborative workspace is locked to a read-only state for 
+both parties. 
+MainFlow 
+1. Legal Professional navigates to the settings panel of the active 
+case and initiates the closure process. 
+2. Legal Professional reviews a system-generated summary of the 
+case resolution to ensure all tasks are completed. 
+3. System generates a final consolidated documentation report 
+detailing all milestones, messages, and files. 
+4. System Archiver updates the database tracking status to 'Closed' 
+
+--- PAGE 81 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+ 
+Activity Diagram 
+ 
+ 
+ 
+ 
+Page 81 of 96 
+ 
+and strips write-access from the shared workspace. 
+5. System dispatches a formal notification to the Client's dashboard, 
+providing read-only access to the final case report. 
+
+--- PAGE 82 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+Module 5 
+5.1 Log User Activity  
+●​ Use Case Diagram 
+ 
+●​ Use Case Description 
+ 
+ 
+ 
+ 
+Page 82 of 96 
+ 
+Use Case Name 
+Log User Activity  
+Actor 
+User, System AI Engine, Legal Professional, Administrator   
+Preconditions 
+• User is authenticated in the system. 
+• User performs an action within the platform. 
+• Audit logging service is active and connected to the database.  
+Postconditions 
+• User activity is successfully recorded in the audit trail. 
+• Activity logs are stored securely in the database. 
+• Authorized administrators can review logged activities.  
+MainFlow 
+1. User performs an action within the ALLY platform (e.g., login, upload 
+
+--- PAGE 83 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Activity Diagram 
+ 
+ 
+ 
+Page 83 of 96 
+ 
+document, submit inquiry). 
+2. System detects and captures the activity event. 
+3. System records metadata including user ID, timestamp, activity type, 
+and affected module. 
+4. System AI Engine categorizes the activity based on system-defined 
+audit classifications. 
+5. System stores the activity log securely in the audit trail database. 
+6. Administrator or Legal Professional accesses the audit monitoring 
+dashboard. 
+7. System retrieves and displays the recorded user activities.  
+
+--- PAGE 84 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Wireframe 
+5.2 Log AI Interaction  
+●​
+Use Case Diagram 
+●​
+Use Case Description 
+ 
+ 
+ 
+Page 84 of 96 
+ 
+Use Case Name 
+Log AI Interaction   
+Actor 
+System AI Engine, Legal Professional  
+Preconditions 
+• A user submits an AI legal inquiry or case-related AI request. 
+• The AI Engine is active and connected to the legal repository. 
+• Audit logging services are operational.  
+Postconditions 
+• AI interaction details are successfully recorded in the audit trail. 
+• AI-generated responses and related metadata are securely stored. 
+• Legal professionals and administrators can review AI interaction 
+history.  
+MainFlow 
+1. User submits a legal inquiry or AI-assisted request through the ALLY 
+platform. 
+
+--- PAGE 85 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Activity Diagram 
+ 
+ 
+ 
+Page 85 of 96 
+ 
+2. System AI Engine receives and processes the request. 
+3. System AI Engine retrieves legal references and generates a 
+response. 
+4. System captures AI interaction metadata including query type, 
+timestamp, retrieved references, and generated output. 
+5. System AI Engine categorizes the interaction for audit and 
+monitoring purposes. 
+6. System stores the AI interaction logs securely in the database. 
+7. Legal Professional accesses the dashboard to review AI interaction 
+history and related legal references.  
+
+--- PAGE 86 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+ 
+5.3 View Audit Trail  
+●​
+Use Case Diagram 
+ 
+ 
+ 
+ 
+●​
+Use Case Description 
+ 
+ 
+ 
+Page 86 of 96 
+ 
+Use Case Name 
+View Audit Trail  
+Actor 
+System AI Engine, Legal Professional, Administrator  
+Preconditions 
+• Audit logging services are operational. 
+• User activities and AI interactions have been recorded in the system. 
+• Legal Professional or Administrator has authorized access to the 
+
+--- PAGE 87 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+Page 87 of 96 
+ 
+audit dashboard.  
+Postconditions 
+• Audit trail records are successfully retrieved and displayed. 
+• Authorized personnel can review system activities and AI interaction 
+history. 
+• Audit review actions are securely logged in the system.  
+MainFlow 
+1. Legal Professional or Administrator logs into the ALLY platform. 
+2. User accesses the Audit Trail Dashboard. 
+3. System retrieves stored audit logs and AI interaction records from 
+the database. 
+4. System AI Engine categorizes and organizes the logs based on 
+activity type, timestamp, and user actions. 
+5. User applies filters or search parameters to narrow audit records. 
+6. System displays the filtered audit trail records and AI interaction 
+history. 
+7. Legal Professional or Administrator reviews the retrieved audit 
+information. 
+8. System logs the audit trail viewing activity for accountability 
+purposes.   
+
+--- PAGE 88 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+●​
+Activity Diagram 
+ 
+ 
+ 
+Page 88 of 96 
+ 
+
+--- PAGE 89 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​
+Wireframe 
+ 
+5.4 Generate Case Activity Report  
+●​
+Use Case Diagram 
+ 
+ 
+ 
+●​
+Use Case Description 
+ 
+ 
+Page 89 of 96 
+ 
+Use Case Name 
+Generate Case Activity Report  
+Actor 
+System AI Engine, Legal Professional, Administrator  
+Preconditions 
+• Audit logging services are operational. 
+• Case activities, user actions, and AI interactions have been recorded 
+in the system. 
+• Legal Professional or Administrator has authorized access to 
+reporting tools and audit records.   
+
+--- PAGE 90 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+Page 90 of 96 
+ 
+Postconditions 
+• Case activity reports are successfully generated and 
+displayed/exported. 
+• Retrieved case activities are compiled into structured reports. 
+• Report generation activities are securely logged in the system.  
+MainFlow 
+1. Legal Professional or Administrator logs into the ALLY platform. 
+2. User accesses the Case Activity Report module. 
+3. User selects a case record or applies report filters (e.g., date range, 
+case type, user activity). 
+4. System retrieves case activities, audit logs, and AI interaction 
+records from the database. 
+5. System AI Engine categorizes and organizes the retrieved data into 
+a structured report format. 
+6. System generates the case activity report summary. 
+7. User reviews the generated report through the dashboard. 
+8. User optionally exports the report as a document or PDF. 
+9. System logs the report generation activity for accountability and 
+monitoring purposes.  
+
+--- PAGE 91 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+ 
+●​
+Activity Diagram 
+ 
+●​
+Wireframe 
+5.5 Detect Unauthorized Access  
+●​
+Use Case Diagram 
+●​
+Use Case Description 
+ 
+ 
+ 
+Page 91 of 96 
+ 
+
+--- PAGE 92 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+ 
+Page 92 of 96 
+ 
+Use Case Name 
+Detect Unauthorized Access   
+Actor 
+System AI Engine, Legal Professional, Administrator  
+Preconditions 
+• Security monitoring and audit logging services are operational. 
+• User authentication and access control mechanisms are active. 
+• System activity logs and login records are continuously monitored by 
+the platform.    
+Postconditions 
+• Unauthorized or suspicious access attempts are successfully 
+detected and recorded. 
+• Security alerts and notifications are generated for administrators. 
+• Unauthorized access attempts are blocked or restricted by the 
+system. 
+• Security incident activities are securely logged in the audit trail.   
+MainFlow 
+1. User attempts to access the ALLY platform or protected system 
+resources. 
+2. System validates user credentials and access permissions. 
+3. System AI Engine monitors login behavior and system activity 
+patterns. 
+4. System detects suspicious or unauthorized access attempts (e.g., 
+invalid credentials, unusual activity, unauthorized role access). 
+5. System AI Engine categorizes the detected activity as a potential 
+security incident. 
+6. System blocks or restricts unauthorized access attempts. 
+
+--- PAGE 93 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+ 
+●​
+Activity Diagram 
+ 
+●​
+Wireframe 
+ 
+ 
+ 
+ 
+Page 93 of 96 
+ 
+7. System records the detected incident and related metadata in the 
+security audit logs. 
+8. Administrator receives security notifications and reviews the 
+detected incident through the monitoring dashboard. 
+9. System logs all security monitoring and response activities for 
+accountability purposes.  
+
+--- PAGE 94 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+3.4​
+Non-functional requirements 
+ 
+Performance 
+Ally shall significantly improve the speed and efficiency of accessing legal information 
+compared to traditional manual processes: 
+●​ The system shall return legal search results and case references within 2–3 seconds, 
+reducing the need for manual legal research. 
+●​ AI-generated preliminary legal guidance shall be delivered within 5 seconds, 
+improving response time compared to human-only consultation. 
+●​ The system shall support at least 300 concurrent users, ensuring accessibility even 
+during peak usage. 
+●​ Legal document uploads and retrieval shall be completed within 3–5 seconds, 
+depending on file size and network conditions. 
+●​ The platform shall minimize delays through optimized database queries and caching 
+mechanisms. 
+ 
+ 
+ 
+ 
+Page 94 of 96 
+ 
+
+--- PAGE 95 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+Security 
+The system shall ensure the confidentiality, integrity, and protection of sensitive legal and 
+personal data: 
+●​ The system shall comply with the Data Privacy Act of 2012. 
+●​ All data transmissions shall be secured using HTTPS with TLS encryption. 
+●​ The system shall implement role-based access control (RBAC) to restrict access to 
+authorized users only. 
+●​ User authentication shall use secure mechanisms such as JWT (JSON Web Tokens) 
+or equivalent. 
+●​ Sensitive data (e.g., personal information, legal documents) shall be encrypted at rest 
+and in transit. 
+●​ The system shall log user activities for monitoring suspicious behavior and auditing. 
+●​ Passwords shall be securely stored using hashing algorithms (e.g., bcrypt). 
+ 
+Reliability 
+The system shall ensure consistent and dependable operation: 
+●​ The system shall achieve at least 99% uptime availability, excluding scheduled 
+maintenance. 
+●​ Automatic data backup shall be performed regularly (e.g., daily backups). 
+●​ The system shall implement error handling mechanisms to prevent crashes and 
+ensure graceful failure. 
+●​ In case of failure, the system shall be able to recover data with minimal loss. 
+●​ Critical system components (authentication, database access) shall include fault 
+tolerance mechanisms. 
+●​ The system shall provide status notifications to users in case of system downtime or 
+delays. 
+ 
+Usability & Accessibility 
+The system will ensure users will experience a responsive platform: 
+ 
+●​ Cross-Platform Compatibility: 
+The responsive web application must operate consistently across major modern 
+browsers, including current and previous stable versions of Chrome, Firefox, and 
+Microsoft Edge on desktop systems. It must also be fully functional on mobile devices 
+running Android and iOS, ensuring proper rendering and usability across different 
+screen sizes and operating environments.  
+ 
+ 
+ 
+Page 95 of 96 
+ 
+
+--- PAGE 96 ---
+ 
+Software Requirements Specifications  
+Ally 
+Document Version: 1.0 
+Published Date: DD MMMM YYYY 
+ 
+●​ Accessibility Standard: 
+The client-facing interface shall be developed in compliance with the WCAG 2.1 Level 
+AA accessibility guidelines to ensure usability for individuals with disabilities, including 
+support for screen readers, keyboard navigation, and sufficient color contrast.  
+ 
+ 
+ 
+Page 96 of 96 
+ 

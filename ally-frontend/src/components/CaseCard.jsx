@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Calendar, User, FileText, Clock, CheckCircle, XCircle, AlertCircle, Check, X } from 'lucide-react';
+import { Calendar, User, FileText, Clock, CheckCircle, XCircle, AlertCircle, Check, X, Trash2 } from 'lucide-react';
 
-const CaseCard = ({ case_, userRole, onStatusChange, onAppointmentBooked, onCardClick }) => {
+const CaseCard = ({ case_, userRole, onStatusChange, onDeleteCase, onAppointmentBooked, onCardClick }) => {
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -64,6 +65,22 @@ const CaseCard = ({ case_, userRole, onStatusChange, onAppointmentBooked, onCard
   const handleCardClick = () => {
     if (onCardClick) {
       onCardClick(case_);
+    }
+  };
+
+  const canClientDelete = userRole === 'CLIENT' && ['PENDING', 'DECLINED'].includes(case_.status);
+
+  const handleDeleteCase = async (e) => {
+    e.stopPropagation();
+    if (!onDeleteCase || !canClientDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await onDeleteCase(case_.caseId);
+    } catch (error) {
+      console.error('Error deleting case:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -156,6 +173,17 @@ const CaseCard = ({ case_, userRole, onStatusChange, onAppointmentBooked, onCard
                 {isDeclining ? 'Declining...' : 'Decline'}
               </button>
             </div>
+          )}
+
+          {canClientDelete && (
+            <button
+              onClick={handleDeleteCase}
+              disabled={isDeleting}
+              className="flex items-center px-3 py-1.5 text-xs text-red-700 transition-colors bg-red-50 border border-red-200 rounded hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </button>
           )}
         </div>
       </div>

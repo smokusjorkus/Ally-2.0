@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -121,6 +122,20 @@ public class LegalCasesController {
         } catch (RuntimeException e) { // Catch specific exceptions if preferred
             e.printStackTrace(); // Or log more appropriately
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null); // Or a proper error DTO
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/{caseId}/client/{clientId}")
+    public ResponseEntity<Void> deleteClientCase(@PathVariable int caseId, @PathVariable int clientId) {
+        try {
+            LegalCaseService.deleteClientCase(caseId, clientId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

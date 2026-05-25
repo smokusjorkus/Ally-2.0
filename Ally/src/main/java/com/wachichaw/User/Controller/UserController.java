@@ -11,6 +11,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -59,6 +60,13 @@ public class UserController {
     @Autowired
     private LawyerRepo lawyerRepo;
 
+    @Value("${storage.type:local}")
+    private String storageType;
+
+    private boolean useFirebaseStorage() {
+        return "firebase".equalsIgnoreCase(storageType);
+    }
+
     private Bucket firebaseBucket() {
         if (FirebaseApp.getApps().isEmpty()) {
             throw new ResponseStatusException(
@@ -67,6 +75,28 @@ public class UserController {
             );
         }
         return StorageClient.getInstance().bucket();
+    }
+
+    private String uploadToFirebase(String folder, MultipartFile file) throws java.io.IOException {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        if (!useFirebaseStorage()) {
+            System.out.println("Skipping Firebase upload for " + folder + " because storage.type=" + storageType);
+            return null;
+        }
+
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Bucket bucket = firebaseBucket();
+        Blob blob = bucket.create(folder + "/" + fileName, file.getBytes(), file.getContentType());
+        String encodedFileName = URLEncoder.encode(blob.getName(), StandardCharsets.UTF_8);
+
+        return String.format(
+            "https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media",
+            bucket.getName(),
+            encodedFileName
+        );
     }
 
     @PutMapping("/adminUpdate/{id}")
@@ -114,24 +144,7 @@ public class UserController {
             @PathVariable int id,
             @RequestParam("credentials") MultipartFile credentialsFile
     ) throws java.io.IOException {
-        String credentialsFileURL = null;
-
-        if (credentialsFile != null && !credentialsFile.isEmpty()) {
-            String fileName = UUID.randomUUID() + "_" + credentialsFile.getOriginalFilename();
-
-            Bucket bucket = firebaseBucket();
-            Blob blob = bucket.create("credentials/" + fileName,
-                                      credentialsFile.getBytes(),
-                                      credentialsFile.getContentType());
-
-            String encodedFileName = URLEncoder.encode(blob.getName(), StandardCharsets.UTF_8);
-            credentialsFileURL = String.format(
-                "https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media",
-                bucket.getName(),
-                encodedFileName
-            );
-        }
-
+        String credentialsFileURL = uploadToFirebase("credentials", credentialsFile);
         LawyerEntity updated = userService.updateLawyerCredentials(id, credentialsFileURL);
         return ResponseEntity.ok(updated);
     }
@@ -189,24 +202,7 @@ public class UserController {
         @RequestParam("zip") String zip,
         @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile
     ) throws java.io.IOException {
-        
-        String profilePhotoUrl = null;
-
-    if (profilePhotoFile != null && !profilePhotoFile.isEmpty()) {
-        String fileName = UUID.randomUUID() + "_" + profilePhotoFile.getOriginalFilename();
-
-        Bucket bucket = firebaseBucket();
-        Blob blob = bucket.create("profile_pictures/" + fileName,
-                                  profilePhotoFile.getBytes(),
-                                  profilePhotoFile.getContentType());
-
-        String encodedFileName = URLEncoder.encode(blob.getName(), StandardCharsets.UTF_8);
-profilePhotoUrl = String.format(
-    "https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media",
-    bucket.getName(),
-    encodedFileName
-);
-    }
+        String profilePhotoUrl = uploadToFirebase("profile_pictures", profilePhotoFile);
         ClientEntity client = userService.createClient(email, password, fname, lname, 
                                         phoneNumber, address, city, province, zip, profilePhotoUrl);
         return ResponseEntity.ok(client);
@@ -237,43 +233,8 @@ profilePhotoUrl = String.format(
     @RequestParam(value = "educationInstitution", required = false) String educationInstitution,
     @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile
 ) throws java.io.IOException {
-    
-    String profilePhotoUrl = null;
-
-    if (profilePhotoFile != null && !profilePhotoFile.isEmpty()) {
-        String fileName = UUID.randomUUID() + "_" + profilePhotoFile.getOriginalFilename();
-
-        Bucket bucket = firebaseBucket();
-        Blob blob = bucket.create("profile_pictures/" + fileName,
-                                  profilePhotoFile.getBytes(),
-                                  profilePhotoFile.getContentType());
-
-        String encodedFileName = URLEncoder.encode(blob.getName(), StandardCharsets.UTF_8);
-profilePhotoUrl = String.format(
-    "https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media",
-    bucket.getName(),
-    encodedFileName
-);
-    }
-
-
-    String credentialsFileURL = null;
-
-    if (credentialsFile != null && !credentialsFile.isEmpty()) {
-        String fileName = UUID.randomUUID() + "_" + credentialsFile.getOriginalFilename();
-
-        Bucket bucket = firebaseBucket();
-        Blob blob = bucket.create("credentials/" + fileName,
-                                  credentialsFile.getBytes(),
-                                  credentialsFile.getContentType());
-
-        String encodedFileName = URLEncoder.encode(blob.getName(), StandardCharsets.UTF_8);
-credentialsFileURL = String.format(
-    "https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media",
-    bucket.getName(),
-    encodedFileName
-);
-    }
+    String profilePhotoUrl = uploadToFirebase("profile_pictures", profilePhotoFile);
+    String credentialsFileURL = uploadToFirebase("credentials", credentialsFile);
 
     LawyerEntity lawyer = userService.createLawyer(
         email,

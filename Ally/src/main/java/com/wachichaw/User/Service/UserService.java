@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -47,12 +48,26 @@ public class UserService {
     private VerificationService verificationService;
     @Autowired
     private SystemSettingsService systemSettingsService;
+
+    @Value("${MAILERSEND_API_KEY:}")
+    private String mailerSendApiKey;
+
+    @Value("${LOCAL_DEV:${app.local-dev:false}}")
+    private boolean localDev;
     
      
 
     public UserService(UserRepo userRepo,PasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    private boolean shouldSendVerificationEmail() {
+        return systemSettingsService.getSettings().isEnableEmailVerification();
+    }
+
+    private boolean canSendVerificationEmail() {
+        return mailerSendApiKey != null && !mailerSendApiKey.trim().isEmpty();
     }
 
     public AdminEntity createAdmin(String email, String pass, String Fname, String Lname, Long phoneNumber, String address, String city, String province, String zip) {
@@ -105,7 +120,7 @@ public class UserService {
         client.setZip(zip);
         client.setProfilePhotoUrl(profilePhoto);
         client.setAccountType(AccountType.CLIENT);
-            if (!systemSettingsService.getSettings().isEnableEmailVerification()) {
+            if (!shouldSendVerificationEmail() || (localDev && !canSendVerificationEmail())) {
                 client.setVerified(true);
                 client.setPassword(passwordEncoder.encode(pass));
                 return userRepo.save(client);
@@ -118,7 +133,16 @@ public class UserService {
         System.out.println("Lawyer first name: " + Fname);
         System.out.println("Lawyer password: " + token);
         ClientEntity savedClient = client;
-        verificationService.sendVerificationEmail(savedClient.getEmail(), savedClient.getFname(), token);
+        try {
+            verificationService.sendVerificationEmail(savedClient.getEmail(), savedClient.getFname(), token);
+        } catch (RuntimeException e) {
+            if (!localDev) {
+                throw e;
+            }
+            client.setVerified(true);
+            client.setPassword(passwordEncoder.encode(pass));
+            return userRepo.save(client);
+        }
         return savedClient;
         }
     }
@@ -180,7 +204,7 @@ public class UserService {
         lawyer.setEducationInstitution(educationInstitution);
         lawyer.setProfilePhotoUrl(profilePhoto);
         lawyer.setAccountType(AccountType.LAWYER);
-            if (!systemSettingsService.getSettings().isEnableEmailVerification()) {
+            if (!shouldSendVerificationEmail() || (localDev && !canSendVerificationEmail())) {
                 lawyer.setVerified(true);
                 lawyer.setPassword(passwordEncoder.encode(pass));
                 return userRepo.save(lawyer);
@@ -193,7 +217,16 @@ public class UserService {
         System.out.println("Lawyer first name: " + Fname);
         System.out.println("Lawyer password: " + token);
         LawyerEntity savedLawyer = lawyer;
-        verificationService.sendVerificationEmail(savedLawyer.getEmail(), savedLawyer.getFname(), token);
+        try {
+            verificationService.sendVerificationEmail(savedLawyer.getEmail(), savedLawyer.getFname(), token);
+        } catch (RuntimeException e) {
+            if (!localDev) {
+                throw e;
+            }
+            lawyer.setVerified(true);
+            lawyer.setPassword(passwordEncoder.encode(pass));
+            return userRepo.save(lawyer);
+        }
         return savedLawyer;
         }
     }
