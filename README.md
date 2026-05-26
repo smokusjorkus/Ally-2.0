@@ -303,11 +303,11 @@ mvn -q -DskipTests compile
 
 | Name | Role |
 |------|------|
-| Lumauag, Johanne Gabriel P. | Developer |
-| Alesna, Ervin Dione V. | Developer |
-| Butihen, Joseph Harry G. | Developer |
-| Dioquino, John Lawrence L. | Developer |
-| Ortega, Harvey A. | Developer |
+| Lumauag, Johanne Gabriel P. | RAG/Backend Developer |
+| Alesna, Ervin Dione V. | UI/UX Developer |
+| Butihen, Joseph Harry G. | Backend Developer |
+| Dioquino, John Lawrence L. | Frontend Developer |
+| Ortega, Harvey A. | Frontend Developer |
 
 ### Original Project Team
 
