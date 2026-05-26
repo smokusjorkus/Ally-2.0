@@ -299,6 +299,18 @@ mvn -q -DskipTests compile
 
 ## Project Team
 
+### Current Project Team
+
+| Name | Role |
+|------|------|
+| Lumauag, Johanne Gabriel P. | Developer |
+| Alesna, Ervin Dione V. | Developer |
+| Butihen, Joseph Harry G. | Developer |
+| Dioquino, John Lawrence L. | Developer |
+| Ortega, Harvey A. | Developer |
+
+### Original Project Team
+
 | Profile | Name | Role | GitHub Username |
 |---------|------|------|-----------------|
 | <img src="https://avatars.githubusercontent.com/u/104577324?v=4" width="50"> | Vicci Louise Agramon | Backend Developer | [@Xansxxx3](https://github.com/Xansxxx3) |
