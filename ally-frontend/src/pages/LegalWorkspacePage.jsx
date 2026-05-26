@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bot, BriefcaseBusiness, Calendar, FileText, History, Loader2, NotebookPen, Search, Send, UserRound } from 'lucide-react';
+import { Bot, BriefcaseBusiness, Calendar, CheckCircle2, Circle, Clock3, FileText, History, Loader2, NotebookPen, Search, Send, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { caseService } from '../services/caseService.jsx';
 import { getConsultationHistory, sendConsultationMessage } from '../services/allyConsultationService.js';
@@ -133,6 +133,7 @@ const LegalWorkspacePage = () => {
   };
 
   const participant = getParticipant(selectedCase, authData?.accountType);
+  const caseTimeline = getCaseTimeline(selectedCase);
 
   if (loading) {
     return (
@@ -232,6 +233,28 @@ const LegalWorkspacePage = () => {
                   <InfoTile icon={BriefcaseBusiness} label="Type" value={selectedCase.caseType || 'General'} />
                   <InfoTile icon={UserRound} label={participant.label} value={participant.name} />
                   <InfoTile icon={FileText} label="Documents" value={`${documentCounts[selectedCase.caseId] || 0}`} />
+                </div>
+
+                <div className="pt-5 mt-5 border-t border-gray-100">
+                  <div className="flex flex-col gap-1 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900">Case Timeline</h3>
+                      <p className="text-sm text-gray-500">Track the main workspace milestones for this case.</p>
+                    </div>
+                    <span className="text-xs font-medium text-gray-500">
+                      Last updated {formatDateTime(selectedCase.updatedAt || selectedCase.dateSubmitted)}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {caseTimeline.map((item, index) => (
+                      <TimelineStep
+                        key={item.label}
+                        item={item}
+                        isLast={index === caseTimeline.length - 1}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -371,6 +394,58 @@ const InfoTile = ({ icon: Icon, label, value }) => (
   </div>
 );
 
+const TimelineStep = ({ item, isLast }) => {
+  const stateStyles = {
+    done: {
+      icon: CheckCircle2,
+      iconClass: 'text-green-600 bg-green-50',
+      lineClass: 'bg-green-200',
+      badgeClass: 'bg-green-100 text-green-800',
+      label: 'Done'
+    },
+    current: {
+      icon: Clock3,
+      iconClass: 'text-blue-600 bg-blue-50',
+      lineClass: 'bg-blue-200',
+      badgeClass: 'bg-blue-100 text-blue-800',
+      label: 'Current'
+    },
+    upcoming: {
+      icon: Circle,
+      iconClass: 'text-gray-400 bg-gray-50',
+      lineClass: 'bg-gray-200',
+      badgeClass: 'bg-gray-100 text-gray-600',
+      label: 'Upcoming'
+    }
+  };
+
+  const style = stateStyles[item.state] || stateStyles.upcoming;
+  const Icon = style.icon;
+
+  return (
+    <div className="relative p-3 border border-gray-200 rounded-lg bg-gray-50">
+      {!isLast && (
+        <div className={`hidden xl:block absolute top-7 left-[calc(100%-8px)] w-6 h-0.5 ${style.lineClass}`} />
+      )}
+      <div className="flex items-start gap-3">
+        <span className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0 ${style.iconClass}`}>
+          <Icon className="w-4 h-4" />
+        </span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-gray-900">{item.label}</p>
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${style.badgeClass}`}>
+              {style.label}
+            </span>
+          </div>
+          <p className="mt-1 text-xs leading-5 text-gray-500">{item.description}</p>
+          {item.date && <p className="mt-2 text-xs font-medium text-gray-600">{item.date}</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const getNotesKey = (caseId, userId) => `ally.workspace.notes.${userId}.${caseId}`;
 
 const buildWorkspacePrompt = (caseItem, notes, question) => {
@@ -391,6 +466,75 @@ const buildWorkspacePrompt = (caseItem, notes, question) => {
     '',
     `User question: ${question}`
   ].filter(Boolean).join('\n');
+};
+
+const getCaseTimeline = (caseItem) => {
+  if (!caseItem) return [];
+
+  const status = caseItem.status || 'PENDING';
+  const submittedDate = formatDate(caseItem.dateSubmitted);
+  const acceptedStatuses = ['ACCEPTED', 'COMPLETED'];
+  const completedStatuses = ['COMPLETED'];
+  const declinedStatuses = ['DECLINED', 'CANCELLED'];
+
+  if (declinedStatuses.includes(status)) {
+    return [
+      {
+        label: 'Submitted',
+        description: 'Client submitted the legal case for review.',
+        date: submittedDate,
+        state: 'done'
+      },
+      {
+        label: 'Reviewed',
+        description: status === 'DECLINED'
+          ? 'The case was reviewed and declined.'
+          : 'The case was cancelled before active work started.',
+        date: formatDate(caseItem.updatedAt),
+        state: 'current'
+      },
+      {
+        label: 'Workspace',
+        description: 'Workspace activity is closed for this case.',
+        state: 'upcoming'
+      },
+      {
+        label: 'Archived',
+        description: 'Final records remain available based on user permissions.',
+        state: 'upcoming'
+      }
+    ];
+  }
+
+  return [
+    {
+      label: 'Submitted',
+      description: 'Client submitted the case details and initial information.',
+      date: submittedDate,
+      state: 'done'
+    },
+    {
+      label: 'Lawyer Review',
+      description: acceptedStatuses.includes(status)
+        ? 'A lawyer accepted the case and can work on it.'
+        : 'Waiting for lawyer or admin review.',
+      state: acceptedStatuses.includes(status) ? 'done' : 'current'
+    },
+    {
+      label: 'Active Workspace',
+      description: 'Documents, notes, AI assistance, and collaboration happen here.',
+      state: completedStatuses.includes(status)
+        ? 'done'
+        : acceptedStatuses.includes(status)
+          ? 'current'
+          : 'upcoming'
+    },
+    {
+      label: 'Closed or Archived',
+      description: 'The case is finalized and retained as a read-only record.',
+      state: completedStatuses.includes(status) ? 'current' : 'upcoming'
+    }
+  ];
 };
 
 const getParticipant = (caseItem, role) => {
