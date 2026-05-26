@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, MessageCircle, Search, MessageSquarePlus } from 'lucide-react';
-import { sendConsultationMessage, checkRagHealth } from '../services/allyConsultationService';
+import { Send, Search, MessageSquarePlus, History, RotateCcw } from 'lucide-react';
+import { sendConsultationMessage, checkRagHealth, getConsultationHistory } from '../services/allyConsultationService';
 import MarkdownText from './shared/MarkdownText';
 
 const AllyConsultationChat = () => {
@@ -9,8 +9,10 @@ const AllyConsultationChat = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [hasChatStarted, setHasChatStarted] = useState(false); // Track if user has sent first message
-  const [useRAG, setUseRAG] = useState(false); // NEW: RAG toggle state
+  const [useRAG, setUseRAG] = useState(true); // NEW: RAG toggle state
   const [ragAvailable, setRagAvailable] = useState(true); // NEW: RAG service status
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -28,7 +30,22 @@ const AllyConsultationChat = () => {
       setRagAvailable(isHealthy);
     };
     checkRAG();
+    loadHistory();
   }, []);
+
+  const loadHistory = async () => {
+    if (!localStorage.getItem('token')) return;
+
+    setHistoryLoading(true);
+    try {
+      const historyItems = await getConsultationHistory(50);
+      setHistory(historyItems);
+    } catch (error) {
+      console.error('Error loading AI chat history:', error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   // Listen for reset-chat event from sidebar
   useEffect(() => {
@@ -62,6 +79,7 @@ const AllyConsultationChat = () => {
       };
       
       setMessages(prev => [...prev, aiMessage]);
+      loadHistory();
     } catch {
       const errorMessage = {
         id: `msg-${Date.now()}-${messageIdCounter.current++}`,
@@ -114,6 +132,31 @@ const AllyConsultationChat = () => {
     }
   };
 
+  const openHistoryItem = (item) => {
+    const createdAt = item.createdAt ? new Date(item.createdAt) : new Date();
+    const timestamp = createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    setMessages([
+      {
+        id: `history-user-${item.historyId}`,
+        text: item.userMessage,
+        sender: 'user',
+        timestamp
+      },
+      {
+        id: `history-ai-${item.historyId}`,
+        text: item.aiResponse,
+        sender: 'ai',
+        timestamp,
+        relevantCases: null,
+        caseCount: item.caseCount,
+        confidence: item.confidence,
+        ragEnabled: item.ragEnabled
+      }
+    ]);
+    setHasChatStarted(true);
+  };
+
   return (
     <>
       {!hasChatStarted ? (
@@ -124,6 +167,23 @@ const AllyConsultationChat = () => {
           </h1>
           
           <div className="w-full max-w-2xl">
+            <div className="mb-3 flex items-center justify-end">
+              <button
+                onClick={() => setUseRAG(!useRAG)}
+                disabled={!ragAvailable}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+                  useRAG
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                title={!ragAvailable ? 'RAG service unavailable' : 'Toggle case search'}
+              >
+                <Search className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {ragAvailable ? (useRAG ? 'Case Search: ON' : 'Case Search: OFF') : 'Case Search Unavailable'}
+                </span>
+              </button>
+            </div>
             <div className="flex items-center gap-3 bg-white border-2 border-gray-300 rounded-full px-6 py-2 shadow-lg hover:shadow-xl transition-shadow">
               <input
                 type="text"
@@ -143,6 +203,44 @@ const AllyConsultationChat = () => {
               </button>
             </div>
           </div>
+
+          {history.length > 0 && (
+            <div className="w-full max-w-2xl mt-8">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <History className="w-4 h-4" />
+                  Recent AI Chats
+                </h2>
+                <button
+                  onClick={loadHistory}
+                  className="p-2 text-gray-500 hover:text-blue-600"
+                  title="Refresh history"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg bg-white max-h-64 overflow-y-auto">
+                {history.slice(0, 8).map((item) => (
+                  <button
+                    key={item.historyId}
+                    onClick={() => openHistoryItem(item)}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50"
+                  >
+                    <p className="text-sm font-medium text-gray-800 truncate">{item.userMessage}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(item.createdAt).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                      {item.ragEnabled ? ' · Case search used' : ''}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         // ACTIVE CHAT STATE - After first message (clean, minimal design)
@@ -265,6 +363,17 @@ const AllyConsultationChat = () => {
                   >
                     <MessageSquarePlus className="w-4 h-4" />
                     <span className="text-sm font-medium">New Chat</span>
+                  </button>
+
+                  <button
+                    onClick={loadHistory}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+                    title="Refresh AI chat history"
+                  >
+                    <History className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      {historyLoading ? 'Loading...' : `${history.length} Saved`}
+                    </span>
                   </button>
                 </div>
                 

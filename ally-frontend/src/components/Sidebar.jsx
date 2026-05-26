@@ -10,7 +10,8 @@ import {
   Calendar,
   HelpCircle,
   LogOut,
-  Eye
+  Eye,
+  ShieldCheck
 } from 'lucide-react';
 
 const Sidebar = ({ onCloseMobile }) => {
@@ -44,6 +45,12 @@ const Sidebar = ({ onCloseMobile }) => {
           icon: Users,
           path: '/admin/users',
           active: path === '/admin/users'
+        },
+        {
+          label: 'Audit Trail',
+          icon: ShieldCheck,
+          path: '/admin/audit',
+          active: path === '/admin/audit'
         }
       ]
     },

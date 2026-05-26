@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Blob;
 import com.google.firebase.cloud.StorageClient;
+import com.wachichaw.Audit.Service.AuditLogService;
 import com.wachichaw.Admin.Entity.AdminEntity;
 import com.wachichaw.Admin.Service.AdminService;
 import com.wachichaw.Client.Entity.ClientEntity;
@@ -56,12 +57,17 @@ public class UserController {
     private UserRepo userRepo;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Autowired
     private LawyerRepo lawyerRepo;
 
     @Value("${storage.type:local}")
     private String storageType;
+
+    @Value("${local.storage.path:../local-storage}")
+    private String localStoragePath;
 
     private boolean useFirebaseStorage() {
         return "firebase".equalsIgnoreCase(storageType);
@@ -97,6 +103,27 @@ public class UserController {
             bucket.getName(),
             encodedFileName
         );
+    }
+
+    private String storeUpload(String folder, MultipartFile file) throws java.io.IOException {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        if (useFirebaseStorage()) {
+            return uploadToFirebase(folder, file);
+        }
+
+        Path uploadDir = Paths.get(localStoragePath, folder).normalize();
+        Files.createDirectories(uploadDir);
+
+        String originalName = Optional.ofNullable(file.getOriginalFilename()).orElse("upload");
+        String safeOriginalName = Paths.get(originalName).getFileName().toString();
+        String fileName = UUID.randomUUID() + "_" + safeOriginalName;
+        Path target = uploadDir.resolve(fileName).normalize();
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+        return target.toString();
     }
 
     @PutMapping("/adminUpdate/{id}")
@@ -144,7 +171,7 @@ public class UserController {
             @PathVariable int id,
             @RequestParam("credentials") MultipartFile credentialsFile
     ) throws java.io.IOException {
-        String credentialsFileURL = uploadToFirebase("credentials", credentialsFile);
+        String credentialsFileURL = storeUpload("credentials", credentialsFile);
         LawyerEntity updated = userService.updateLawyerCredentials(id, credentialsFileURL);
         return ResponseEntity.ok(updated);
     }
@@ -202,7 +229,7 @@ public class UserController {
         @RequestParam("zip") String zip,
         @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile
     ) throws java.io.IOException {
-        String profilePhotoUrl = uploadToFirebase("profile_pictures", profilePhotoFile);
+        String profilePhotoUrl = storeUpload("profile_pictures", profilePhotoFile);
         ClientEntity client = userService.createClient(email, password, fname, lname, 
                                         phoneNumber, address, city, province, zip, profilePhotoUrl);
         return ResponseEntity.ok(client);
@@ -233,8 +260,8 @@ public class UserController {
     @RequestParam(value = "educationInstitution", required = false) String educationInstitution,
     @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile
 ) throws java.io.IOException {
-    String profilePhotoUrl = uploadToFirebase("profile_pictures", profilePhotoFile);
-    String credentialsFileURL = uploadToFirebase("credentials", credentialsFile);
+    String profilePhotoUrl = storeUpload("profile_pictures", profilePhotoFile);
+    String credentialsFileURL = storeUpload("credentials", credentialsFile);
 
     LawyerEntity lawyer = userService.createLawyer(
         email,
@@ -260,20 +287,30 @@ public class UserController {
 
     @PostMapping("/login")
     @Operation(summary = "Login a user")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest loginRequest) {
-        String token = userService.authenticate(loginRequest.getEmail(), loginRequest.getPassword());
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        try {
+            String token = userService.authenticate(loginRequest.getEmail(), loginRequest.getPassword());
 
-        int id = Integer.parseInt(jwtUtil.extractUserId(token));
-        String email = jwtUtil.extractEmail(token);
-        String accountType = jwtUtil.extractAccountType(token);
-        String profilePhoto = jwtUtil.extractProfilePhoto(token);
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("id", id);
-        response.put("email", email);
-        response.put("accountType", accountType);
-        response.put("profilePhoto", profilePhoto);
-        return ResponseEntity.ok(response);
+            int id = Integer.parseInt(jwtUtil.extractUserId(token));
+            String email = jwtUtil.extractEmail(token);
+            String accountType = jwtUtil.extractAccountType(token);
+            String profilePhoto = jwtUtil.extractProfilePhoto(token);
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("id", id);
+            response.put("email", email);
+            response.put("accountType", accountType);
+            response.put("profilePhoto", profilePhoto);
+            try {
+                auditLogService.log(id, "LOGIN", "AUTH", "USER", String.valueOf(id), "User logged in", "SUCCESS");
+            } catch (Exception auditError) {
+                auditError.printStackTrace();
+            }
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
     }    
     @GetMapping("/getAll")
     @Operation(summary = "Get all users", description = "Retrieves a list of all users.")

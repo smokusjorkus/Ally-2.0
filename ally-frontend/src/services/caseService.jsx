@@ -183,7 +183,8 @@ export const caseService = {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete case');
+        const errorText = await response.text();
+        throw new Error(`Failed to delete case: ${response.status}${errorText ? ` - ${errorText}` : ''}`);
       }
     } catch (error) {
       console.error('Error deleting case:', error);

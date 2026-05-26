@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
 import com.google.firebase.cloud.StorageClient;
+import com.wachichaw.Audit.Service.AuditLogService;
 import com.wachichaw.Case.Entity.LegalCasesEntity;
 import com.wachichaw.Case.Repo.LegalCaseRepo;
 import com.wachichaw.Config.JwtUtil;
@@ -51,6 +53,11 @@ public class DocumentController {
     private LegalCaseRepo legalCaseRepo;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private AuditLogService auditLogService;
+
+    @Value("${storage.type:local}")
+    private String storageType;
     
     public DocumentController(DocumentService documentService) {
         this.documentService = documentService;
@@ -149,6 +156,10 @@ public class DocumentController {
             DocumentEntity document = documentService.uploadDocumentToCase(
                 legalCase, userId, file, documentName, documentType, status);
 
+            auditLogService.log(userId, "UPLOAD_DOCUMENT", "DOCUMENT", "DOCUMENT",
+                String.valueOf(document.getDocument_id()),
+                "Uploaded document '" + documentName + "' to case #" + caseId, "SUCCESS");
+
             DocumentDTO documentDTO = new DocumentDTO(document);
             return ResponseEntity.ok(documentDTO);
 
@@ -174,6 +185,8 @@ public class DocumentController {
             boolean deleted = documentService.deleteDocument(documentId, userId, userRole);
             
             if (deleted) {
+                auditLogService.log(userId, "DELETE_DOCUMENT", "DOCUMENT", "DOCUMENT",
+                    String.valueOf(documentId), "Deleted document #" + documentId, "SUCCESS");
                 return ResponseEntity.ok("Document deleted successfully");
             } else {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -210,6 +223,30 @@ public class DocumentController {
             }
 
             try {
+                if (!"firebase".equalsIgnoreCase(storageType)) {
+                    Path localPath = Paths.get(fileUrl).normalize();
+                    if (!Files.exists(localPath)) {
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body("File not found in local storage");
+                    }
+
+                    byte[] fileContent = Files.readAllBytes(localPath);
+                    String contentType = Files.probeContentType(localPath);
+                    if (contentType == null) {
+                        contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                    }
+
+                    InputStreamResource resource = new InputStreamResource(
+                        new java.io.ByteArrayInputStream(fileContent));
+
+                    return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + document.getDocumentName() + "\"")
+                        .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(fileContent.length))
+                        .body(resource);
+                }
+
                 // Extract file name from URL for Firebase Storage access
                 String blobName;
                 if (fileUrl.contains("/o/")) {

@@ -1,147 +1,329 @@
-# ALLY – Digital Legal Engagement Platform  
-
+# ALLY - Digital Legal Engagement Platform
 
 ![Project Status](https://img.shields.io/badge/Status-Prototype-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![React](https://img.shields.io/badge/React-18.2-blue.svg)](https://reactjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-teal.svg)](https://fastapi.tiangolo.com/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://reactjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-RAG-teal.svg)](https://fastapi.tiangolo.com/)
 
-ALLY is a digital platform designed to streamline and secure the process of finding legal assistance and managing initial legal interactions. It connects clients with legal professionals, facilitates preliminary consultations, and organizes virtual legal processes, aiming to make legal services more accessible, efficient, and secure.
+ALLY is a digital legal engagement platform for connecting clients with lawyers, managing legal cases, storing case documents, and supporting legal research through an AI assistant powered by retrieval-augmented generation (RAG).
 
----
-
-## ✨ Features
-
-ALLY offers a suite of features designed to improve the legal engagement process:
-
-* **🤖 AI-Powered Legal Assistant (RAG):** An advanced chatbot that answers legal questions by retrieving relevant information from cases of Philippine Supreme Court. Uses fine-tuned Gemini models, Pinecone cloud vector database, and semantic search to provide accurate, citation-backed legal information in real-time.
-* **🗂 Virtual Legal Process Organization:** Provides a secure, centralized repository for document uploads and management, significantly reducing reliance on physical paperwork and improving accessibility.
-* **💬 On-the-Spot Online Consultations:** A temporary, real-time chat system for clients to ask quick legal queries and receive immediate preliminary advice. Designed with privacy in mind, messages are not stored long-term.
-* **📈 Case Tracking and Updates:** Keeps clients informed with automated email notifications on case progress. A unique case tracking ID allows clients to independently check their case status on the platform.
-* **🔐 Security and Privacy:** Ensures the highest level of security with end-to-end encryption for all communications and data. Multi-factor authentication adds an extra layer of protection for user accounts.
+The current prototype includes a Spring Boot backend, a React/Vite frontend, and a FastAPI RAG service that searches Philippine Supreme Court case data through Pinecone.
 
 ---
 
-## 🚀 Getting Started
+## Features
 
-To get a local copy up and running, follow these simple steps:
+* **AI-powered legal assistant with RAG**: Answers Philippine legal questions using DeepSeek and retrieved Supreme Court case context from Pinecone.
+* **2020-2026 Supreme Court case dataset**: The RAG dataset includes processed Philippine Supreme Court case CSVs, including 2025 and 2026 case data.
+* **AI chat history**: Authenticated AI conversations are stored and can be reopened from the consultation page and legal workspace.
+* **Legal workspace**: A case-centered workspace that brings together case details, documents, notes, AI chat, and AI history.
+* **Case management**: Clients can submit cases, lawyers can accept or decline cases, and users can track case status.
+* **Document management**: Users can upload, view, download, and delete documents for accepted cases.
+* **Audit trail**: Admins and lawyers can review logged activity such as login events, case changes, document actions, and AI inquiries.
+* **Email verification and notifications**: MailerSend is used for account verification and email workflows.
+* **OAuth support**: Google OAuth login is supported when OAuth environment variables are configured.
+* **Local or Firebase-backed file storage**: Local storage is supported for development; Firebase Storage can be used when configured.
 
-### 1. Clone the repository:
+---
+
+## Repository Structure
+
+```text
+Capstone-ALLY/
+  Ally/               Spring Boot backend
+  ally-frontend/      React + Vite frontend
+  Ally-FinetuneRAG/   FastAPI RAG service and case dataset tools
+  local-storage/      Local uploaded files during development
+```
+
+---
+
+## Local Development
+
+### Prerequisites
+
+* Java 21+
+* Maven
+* Node.js and npm
+* Python with virtual environment support
+* MySQL 8
+* Pinecone API key and index for RAG search
+* DeepSeek API key for AI responses and classification
+
+### 1. Clone the repository
+
 ```bash
 git clone <repository_url>
+cd Capstone-ALLY
 ```
 
-### 2. Backend Setup (Spring Boot):
-* Navigate to the backend directory.
-* Install dependencies.
-* Configure the database connection (MySQL).
-* Run the Spring Boot application.
+### 2. Backend setup
 
-The Backend API Documentation will be available at `http://localhost:8080/swagger-ui/index.html`
+Create or update `Ally/.env` with your local values:
 
-### 3. RAG Setup (ALLY Legal Assistant):
-* Navigate to the RAG directory.
-* Create and activate Python virtual environment.
-* Install Python dependencies (`pip install -r requirements.txt`).
-* Configure environment variables (Create `.env` file).
+```env
+DB_URL=jdbc:mysql://localhost:3306/ally
+DB_USERNAME=root
+DB_PASSWORD=123456
 
-**Start the ALLY FastAPI server:**
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
+
+RAG_SERVICE_URL=http://localhost:8001
+
+STORAGE_TYPE=local
+MAILERSEND_API_KEY=your_mailersend_api_key
+MAILERSEND_FROM_EMAIL=your_verified_sender
+MAILERSEND_FROM_NAME=Ally Team
+
+FRONTEND_URL=http://localhost:5173
+CORS_ALLOWED_ORIGIN_PATTERNS=http://localhost:5173,http://localhost:5174,https://*.vercel.app
 ```
 
-The RAG API will be available at `http://localhost:8000`
+Run the backend from `Ally/`:
 
-For detailed RAG setup instructions, see [`Ally-FinetuneRAG/readme.md`](./Ally-FinetuneRAG/readme.md)
+```bat
+cd Ally
+for /f "usebackq tokens=1,* delims==" %a in (".env") do set "%a=%b"
+mvn spring-boot:run
+```
 
-### 4. Frontend Setup (Vite + React):
-* Navigate to the frontend directory. 
-* Install dependencies (npm install).
-* Configure API endpoint (if needed) in your config file
+Backend URL:
 
-**Start the development server:**
-```bash
+```text
+http://localhost:8080
+```
+
+Swagger UI:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+### 3. RAG service setup
+
+Create or update `Ally-FinetuneRAG/.env`:
+
+```env
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_INDEX_NAME=ally-supreme-court-cases
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_MODEL=deepseek-v4-flash
+HF_TOKEN=your_huggingface_token_optional
+```
+
+Start the RAG service:
+
+```bat
+cd Ally-FinetuneRAG
+venv\Scripts\activate
+for /f "usebackq tokens=1,* delims==" %a in (".env") do set "%a=%b"
+set PYTHONIOENCODING=utf-8
+set PYTHONUTF8=1
+venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8001
+```
+
+RAG URL:
+
+```text
+http://localhost:8001
+```
+
+Check backend-to-RAG status:
+
+```text
+http://localhost:8080/api/chat/health
+```
+
+Expected when RAG is running:
+
+```json
+{
+  "status": "running",
+  "ragService": "running"
+}
+```
+
+### 4. Frontend setup
+
+Create or update `ally-frontend/.env`:
+
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+Run the frontend:
+
+```bat
+cd ally-frontend
+npm install
 npm run dev
 ```
 
-**Open your browser at** `http://localhost:5173`
+Frontend URL:
+
+```text
+http://localhost:5173
+```
 
 ---
 
-## 🏗️ Architecture
+## RAG Dataset
 
+The RAG data is stored under:
+
+```text
+Ally-FinetuneRAG/ally-dataset/csv-dataset/
 ```
+
+The current local dataset includes yearly CSVs from 2020 through 2026:
+
+```text
+2020/2020.csv
+2021/2021.csv
+2022/2022.csv
+2023/2023.csv
+2024/2024.csv
+2025/2025.csv
+2026/2026.csv
+```
+
+Processed chunks are generated into:
+
+```text
+Ally-FinetuneRAG/processed-for-rag/chunks.jsonl
+```
+
+The processed RAG file is what gets embedded and uploaded to Pinecone. If the AI says it only knows data up to 2024, check that:
+
+* RAG is enabled in the frontend.
+* The RAG service is running on port `8001`.
+* `RAG_SERVICE_URL` in `Ally/.env` points to `http://localhost:8001`.
+* The latest processed chunks have been uploaded to Pinecone.
+
+---
+
+## Architecture
+
+```text
 React Frontend (Vite - Port 5173)
-       ↓
+       |
+       v
 Spring Boot Backend (Port 8080)
-       ↓
-Ally-FinetuneRAG FastAPI (Port 8000)
-       ↓
-Pinecone Cloud Vector DB + Vertex AI Fine-tuned Model
+       |
+       v
+Ally-FinetuneRAG FastAPI (Port 8001)
+       |
+       v
+Pinecone Vector DB + DeepSeek + BAAI/bge-large-en-v1.5 embeddings
 ```
 
-The main Spring Boot backend communicates with the FastAPI RAG service for AI-powered legal assistance.
+The Spring Boot backend handles users, cases, documents, audit logs, AI chat history, email workflows, and authentication. The FastAPI RAG service handles query classification, embedding search, and retrieval from Pinecone.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-* **Backend**: Spring Boot (Java)
-* **Frontend**: ReactJS (Vite)
-* **RAG Service**: Python (FastAPI)
-* **Database**: 
-  * MySQL (backend application data)
-  * Pinecone (cloud vector database for RAG)
-  * Qdrant (optional - local vector database for testing)
-* **AI Model**: Google Gemini Flash 2.0 - Lite (Fine-tuned via Vertex AI)
-* **ML Embeddings**: [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5)
-* **Context Classification**: Gemini Base Model for context classification and query routing
-* **Vector Search**: Pinecone Cloud (Production), Qdrant (Local Testing - Optional)
+* **Backend**: Java 21, Spring Boot 3.4.5, Spring Security, Spring Data JPA
+* **Frontend**: React 18.3, Vite 6, Tailwind CSS, lucide-react
+* **RAG service**: Python, FastAPI, sentence-transformers
+* **Application database**: MySQL
+* **Vector database**: Pinecone
+* **AI model**: DeepSeek V4 Flash-compatible chat endpoint
+* **Embeddings**: [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5)
+* **Email**: MailerSend
+* **File storage**: Local development storage or Firebase Storage
 
 ---
 
-## 📚 RAG System Details
+## Main Routes
 
-The ALLY Legal Assistant uses Retrieval-Augmented Generation (RAG) to provide accurate legal information:
+Frontend:
 
-1. **Data Processing**: Philippine Supreme Court cases are processed from CSV files into semantic chunks
-2. **Embedding Generation**: Each chunk is converted to a 1024-dimensional vector using BAAI/bge-large-en-v1.5
-3. **Vector Storage**: Embeddings are stored in Pinecone cloud vector database for fast similarity search
-4. **Query Processing**: User questions are embedded and matched against stored case vectors
-5. **Response Generation**: Relevant cases are retrieved and passed to a fine-tuned Gemini model for natural language response
+```text
+/login
+/my-cases
+/workspace
+/documents
+/documents/:caseId
+/consult
+/appointments
+/lawyers
+/admin
+/admin/audit
+```
 
-For detailed RAG setup instructions, see [`Ally-FinetuneRAG/readme.md`](./Ally-FinetuneRAG/readme.md)
+Backend examples:
+
+```text
+POST /users/login
+GET  /Cases/client/{clientId}
+GET  /Cases/lawyer/{lawyerId}
+GET  /api/documents/case/{caseId}
+POST /api/chat/prompt
+GET  /api/chat/history
+GET  /api/chat/health
+GET  /api/audit-logs
+```
 
 ---
 
-## 👨‍💻 Project Team
+## Useful Commands
 
-| Profile | Name                    | Role | GitHub Username            |
-|---------|-------------------------|------|----------------------------|
-| <img src="https://avatars.githubusercontent.com/u/104577324?v=4" width="50"> | Vicci Louise Agramon | Backend Developer | [@Xansxxx3](https://github.com/Xansxxx3)  |
+Find and stop a process using port `8080`:
+
+```bat
+netstat -ano | findstr :8080
+taskkill /PID <PID_HERE> /F
+```
+
+Build frontend:
+
+```bat
+cd ally-frontend
+npm run build
+```
+
+Compile backend:
+
+```bat
+cd Ally
+mvn -q -DskipTests compile
+```
+
+---
+
+## Project Team
+
+| Profile | Name | Role | GitHub Username |
+|---------|------|------|-----------------|
+| <img src="https://avatars.githubusercontent.com/u/104577324?v=4" width="50"> | Vicci Louise Agramon | Backend Developer | [@Xansxxx3](https://github.com/Xansxxx3) |
 | <img src="https://avatars.githubusercontent.com/u/114855573?v=4" width="50"> | Piolo Frances Enriquez | Lead/Frontend Developer | [@piolonrqz](https://github.com/piolonrqz) |
-| <img src="https://avatars.githubusercontent.com/u/112413548?v=4" width="50"> | Darwin Darryl Largoza | UI/UX Designer | [@Dadaisuk1](https://github.com/Dadaisuk1)  |
-| <img src="https://avatars.githubusercontent.com/u/89176351?v=4" width="50">  | Nathan Rener Malagapo | Backend & RAG/AI Developer | [@sytrusz](https://github.com/sytrusz)     |
-| <img src="https://avatars.githubusercontent.com/u/154393634?v=4" width="50"> | Jerjen Res Pangalay | Backend/Frontend Developer | [@jerjenres](https://github.com/jerjenres)  |
+| <img src="https://avatars.githubusercontent.com/u/112413548?v=4" width="50"> | Darwin Darryl Largoza | UI/UX Designer | [@Dadaisuk1](https://github.com/Dadaisuk1) |
+| <img src="https://avatars.githubusercontent.com/u/89176351?v=4" width="50"> | Nathan Rener Malagapo | Backend & RAG/AI Developer | [@sytrusz](https://github.com/sytrusz) |
+| <img src="https://avatars.githubusercontent.com/u/154393634?v=4" width="50"> | Jerjen Res Pangalay | Backend/Frontend Developer | [@jerjenres](https://github.com/jerjenres) |
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- Philippine Supreme Court for case data: [elibrary](https://elibrary.judiciary.gov.ph/thebookshelf/)
-- Google Vertex AI for model infrastructure
-- Pinecone for cloud vector database services
-- [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5) and [sentence-transformers](https://huggingface.co/sentence-transformers) for embeddings 
+* Philippine Supreme Court e-Library for source case data: [https://elibrary.judiciary.gov.ph/thebookshelf/](https://elibrary.judiciary.gov.ph/thebookshelf/)
+* Pinecone for vector database services
+* DeepSeek for chat and classification
+* [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5)
+* [sentence-transformers](https://huggingface.co/sentence-transformers)
 
 ---
 
-## 📖 Citation
+## Citation
 
 ```bibtex
 @misc{bge_embedding,
-      title={C-Pack: Packaged Resources To Advance General Chinese Embedding}, 
+      title={C-Pack: Packaged Resources To Advance General Chinese Embedding},
       author={Shitao Xiao and Zheng Liu and Peitian Zhang and Niklas Muennighoff},
       year={2023},
       eprint={2309.07597},
@@ -149,23 +331,23 @@ For detailed RAG setup instructions, see [`Ally-FinetuneRAG/readme.md`](./Ally-F
       primaryClass={cs.CL}
 }
 ```
----
-
-## ⚖️ License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-**Copyright (c) 2025 Team 23 - ALLY Development Team**  
-All contributors retain equal rights to this codebase.
 
 ---
 
-## ⚠️ Disclaimer
+## License
 
-**This is legal information, not legal advice.** ALLY provides general information about Philippine law based on Supreme Court cases. For specific legal situations, consult a licensed Philippine lawyer.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+**Copyright (c) 2025 Team 23 - ALLY Development Team**
 
 ---
 
-## 📫 Contact
+## Disclaimer
 
-For any inquiries or feedback, please contact the project team via their respective GitHub profiles listed above.
+**This is legal information, not legal advice.** ALLY provides general information about Philippine law based on available Supreme Court cases and retrieved legal context. For specific legal situations, consult a licensed Philippine lawyer.
+
+---
+
+## Contact
+
+For inquiries or feedback, contact the project team through their GitHub profiles listed above.

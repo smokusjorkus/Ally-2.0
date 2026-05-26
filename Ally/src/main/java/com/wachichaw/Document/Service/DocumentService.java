@@ -2,12 +2,18 @@ package com.wachichaw.Document.Service;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,6 +37,12 @@ public class DocumentService {
     private UserRepo userRepo;
     @Autowired
     private LegalCaseRepo legalCaseRepo;
+
+    @Value("${storage.type:local}")
+    private String storageType;
+
+    @Value("${local.storage.path:../local-storage}")
+    private String localStoragePath;
 
     // Allowed file types
     private static final String[] ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt", ".jpg", ".jpeg", ".png"};
@@ -103,23 +115,7 @@ public class DocumentService {
             throw new RuntimeException("File size exceeds maximum limit of 20MB");
         }
 
-       String DocumentFileURL = null;
-
-    if (file != null && !file.isEmpty()) {
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-
-        Bucket bucket = StorageClient.getInstance().bucket();
-        Blob blob = bucket.create("documents/" + fileName,
-                                  file.getBytes(),
-                                  file.getContentType());
-
-        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString());
-        DocumentFileURL = String.format(
-            "https://firebasestorage.googleapis.com/v0/b/%s/o/documents%%2F%s?alt=media",
-            bucket.getName(),
-            encodedFileName
-        );
-    }
+       String DocumentFileURL = storeDocumentFile(file);
 
         // Get user entity
         UserEntity user = userRepo.findById(userId)
@@ -136,6 +132,40 @@ public class DocumentService {
         document.setStatus(status);
 
         return documentRepo.save(document);
+    }
+
+    private boolean useFirebaseStorage() {
+        return "firebase".equalsIgnoreCase(storageType);
+    }
+
+    private String storeDocumentFile(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+
+        String originalName = Optional.ofNullable(file.getOriginalFilename()).orElse("document");
+        String safeOriginalName = Paths.get(originalName).getFileName().toString();
+        String fileName = UUID.randomUUID() + "_" + safeOriginalName;
+
+        if (!useFirebaseStorage()) {
+            Path uploadDir = Paths.get(localStoragePath, "documents").normalize();
+            Files.createDirectories(uploadDir);
+            Path target = uploadDir.resolve(fileName).normalize();
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            return target.toString();
+        }
+
+        Bucket bucket = StorageClient.getInstance().bucket();
+        Blob blob = bucket.create("documents/" + fileName,
+                file.getBytes(),
+                file.getContentType());
+
+        String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString());
+        return String.format(
+                "https://firebasestorage.googleapis.com/v0/b/%s/o/documents%%2F%s?alt=media",
+                bucket.getName(),
+                encodedFileName
+        );
     }
 
     /**
@@ -185,15 +215,19 @@ public class DocumentService {
         try {
             String fileUrl = document.getFilePath();
             if (fileUrl != null && !fileUrl.isEmpty()) {
-                // Extract file name from URL
-                String blobName = fileUrl.substring(fileUrl.indexOf("/o/") + 3, fileUrl.indexOf("?alt=media"));
-                String decodedBlobName = java.net.URLDecoder.decode(blobName, StandardCharsets.UTF_8.toString());
+                if (!useFirebaseStorage()) {
+                    Files.deleteIfExists(Paths.get(fileUrl));
+                } else {
+                    // Extract file name from URL
+                    String blobName = fileUrl.substring(fileUrl.indexOf("/o/") + 3, fileUrl.indexOf("?alt=media"));
+                    String decodedBlobName = java.net.URLDecoder.decode(blobName, StandardCharsets.UTF_8.toString());
 
-                Bucket bucket = StorageClient.getInstance().bucket();
-                Blob blob = bucket.get(decodedBlobName);
-                
-                if (blob != null && blob.exists()) {
-                    blob.delete();
+                    Bucket bucket = StorageClient.getInstance().bucket();
+                    Blob blob = bucket.get(decodedBlobName);
+                    
+                    if (blob != null && blob.exists()) {
+                        blob.delete();
+                    }
                 }
             }
 

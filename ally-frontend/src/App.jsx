@@ -15,10 +15,12 @@ import LawyerVerification from './components/LawyerVerification'
 import UserManagement from './pages/UserManagement'
 import AnalyticsDashboard from './components/AnalyticsDashboard'
 import SettingsDashboard from './components/SettingsDashboard'
+import AuditTrailDashboard from './components/AuditTrailDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import { LawyerDirectoryPage } from './pages/LawyerDirectoryPage'
 import { AppointmentsPage } from './pages/AppointmentsPage'
 import DocumentsPage from './pages/DocumentsPage'
+import LegalWorkspacePage from './pages/LegalWorkspacePage.jsx'
 import AccountSettings from './components/AccountSettings'
 import ChatContainer from './components/ChatContainer'
 import MyCasesPage from './pages/MyCasesPage'
@@ -85,6 +87,7 @@ function AppContent() {
             <Route path="/messages" element={<ProtectedRoute><ChatContainer /></ProtectedRoute>} />
             <Route path="/appointments" element={<ProtectedRoute><AppointmentsPage /></ProtectedRoute>} />
             <Route path="/my-cases" element={<ProtectedRoute><MyCasesPage /></ProtectedRoute>} />
+            <Route path="/workspace" element={<ProtectedRoute><LegalWorkspacePage /></ProtectedRoute>} />
             <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
             <Route path="/documents/:caseId" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
@@ -110,6 +113,7 @@ function AppContent() {
             <Route path="verification" element={<LawyerVerification />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="analytics" element={<AnalyticsDashboard />} />
+            <Route path="audit" element={<AuditTrailDashboard />} />
             <Route path="settings" element={<SettingsDashboard />} />     
           </Route>
 

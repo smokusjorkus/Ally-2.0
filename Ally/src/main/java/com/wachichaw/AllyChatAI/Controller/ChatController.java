@@ -1,13 +1,17 @@
 package com.wachichaw.AllyChatAI.Controller;
 
 import com.wachichaw.AllyChatAI.Service.DeepSeekChatService;
+import com.wachichaw.AllyChatAI.Service.AiChatHistoryService;
 import com.wachichaw.AllyRAG.*;
+import com.wachichaw.Audit.Service.AuditLogService;
+import com.wachichaw.Config.JwtUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -29,9 +33,15 @@ public class ChatController {
 
     @Autowired
     private LegalQuestionValidator validator;
+    @Autowired
+    private AuditLogService auditLogService;
+    @Autowired
+    private AiChatHistoryService aiChatHistoryService;
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @PostMapping("/prompt")
-    public ResponseEntity<ChatResponse> chat(@RequestBody ChatRequest request) {
+    public ResponseEntity<ChatResponse> chat(@RequestBody ChatRequest request, HttpServletRequest httpRequest) {
         ChatResponse chatResponse = new ChatResponse();
         chatResponse.setRagEnabled(request.isUseRAG());
         chatResponse.setTimestamp(LocalDateTime.now().toString());
@@ -59,6 +69,7 @@ public class ChatController {
             chatResponse.setRelevantCases(null);
             chatResponse.setCaseCount(0);
             chatResponse.setConfidence("Rejected - DeepSeek");
+            saveHistoryIfAuthenticated(httpRequest, request.getMessage(), chatResponse);
             
             return ResponseEntity.badRequest().body(chatResponse);
         }
@@ -81,6 +92,7 @@ public class ChatController {
             chatResponse.setRelevantCases(null);
             chatResponse.setCaseCount(0);
             chatResponse.setConfidence("Rejected - Length");
+            saveHistoryIfAuthenticated(httpRequest, request.getMessage(), chatResponse);
             
             return ResponseEntity.badRequest().body(chatResponse);
         }
@@ -146,6 +158,7 @@ public class ChatController {
                 chatResponse.setRelevantCases(null);
                 chatResponse.setCaseCount(0);
                 chatResponse.setConfidence("Rejected - " + ragResults.getRejectionStage());
+                saveHistoryIfAuthenticated(httpRequest, request.getMessage(), chatResponse);
                 
                 return ResponseEntity.badRequest().body(chatResponse);
             }
@@ -213,6 +226,8 @@ public class ChatController {
                     contextBuilder.append("User Question: ").append(request.getMessage());
                     contextBuilder.append("\n\n");
                     contextBuilder.append("INSTRUCTIONS:\n");
+                    contextBuilder.append("The cases above are retrieved from ALLY's local RAG database and may include 2025 or 2026 Supreme Court cases. ");
+                    contextBuilder.append("Use them as provided context. Do not reject them or claim you cannot access newer cases if they are included above. ");
                     contextBuilder.append("Please answer the user's question using the above Supreme Court cases as reference. ");
                     contextBuilder.append("Cite specific cases using [Case 1], [Case 2] format in your response. ");
                     contextBuilder.append("Provide a clear answer with legal basis and practical implications. ");
@@ -275,8 +290,63 @@ public class ChatController {
         String response = deepSeekChatService.sendMessage(enhancedPrompt);
         chatResponse.setResponse(response);
         System.out.println("Response generated (" + response.length() + " chars)");
+        Integer userId = extractOptionalUserId(httpRequest);
+        saveHistoryIfAuthenticated(userId, request.getMessage(), chatResponse);
+        auditLogService.log(userId, "AI_QUERY", "AI", "CHAT", null,
+            "Processed AI legal inquiry with RAG " + (request.isUseRAG() ? "enabled" : "disabled"), "SUCCESS");
         
         return ResponseEntity.ok(chatResponse);
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> getChatHistory(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(defaultValue = "50") int limit) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body("Missing authorization token");
+            }
+
+            int userId = Integer.parseInt(jwtUtil.extractUserId(authHeader.substring(7)));
+            return ResponseEntity.ok(aiChatHistoryService.getRecentForUser(userId, limit));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Failed to load AI chat history: " + e.getMessage());
+        }
+    }
+
+    private void saveHistoryIfAuthenticated(HttpServletRequest request, String userMessage, ChatResponse chatResponse) {
+        saveHistoryIfAuthenticated(extractOptionalUserId(request), userMessage, chatResponse);
+    }
+
+    private void saveHistoryIfAuthenticated(Integer userId, String userMessage, ChatResponse chatResponse) {
+        if (userId == null || chatResponse.getResponse() == null) {
+            return;
+        }
+
+        try {
+            aiChatHistoryService.save(
+                userId,
+                userMessage,
+                chatResponse.getResponse(),
+                chatResponse.isRagEnabled(),
+                chatResponse.getCaseCount(),
+                chatResponse.getConfidence()
+            );
+        } catch (Exception historyError) {
+            historyError.printStackTrace();
+        }
+    }
+
+    private Integer extractOptionalUserId(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return null;
+            }
+            return Integer.parseInt(jwtUtil.extractUserId(authHeader.substring(7)));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private boolean isGreetingOrMetaQuestion(String message) {

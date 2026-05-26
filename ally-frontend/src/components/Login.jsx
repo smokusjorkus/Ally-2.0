@@ -38,7 +38,14 @@ const Login = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Invalid credentials');
+        let message = 'Invalid credentials';
+        try {
+          const errorData = await response.json();
+          message = errorData.error || errorData.message || message;
+        } catch {
+          message = await response.text() || message;
+        }
+        throw new Error(message);
       }
 
       const data = await response.json();
@@ -92,7 +99,7 @@ const Login = () => {
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Login failed:', error);
-      toast.error('Login failed. Please check your credentials.');
+      toast.error(`Login failed. ${error.message}`);
     }
   };
 
