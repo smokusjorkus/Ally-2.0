@@ -35,3 +35,12 @@ src/main/resources/static/credentials/f2bc693f-bc39-4738-80cb-4130eabc516a_servi
 src/main/resources/static/credentials/7290d394-d5ed-423b-b262-5504b87b3ecd_ally-firebasesdk.json
 
 .vscode
+
+# Local environment secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+Ally/.env
+ally-frontend/.env
+Ally-FinetuneRAG/.env
