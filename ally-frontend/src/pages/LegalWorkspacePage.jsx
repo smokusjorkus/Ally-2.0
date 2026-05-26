@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bot, BriefcaseBusiness, Calendar, CheckCircle2, Circle, Clock3, FileText, History, Loader2, NotebookPen, Search, Send, UserRound } from 'lucide-react';
+import { Bot, BriefcaseBusiness, Calendar, CheckCircle2, Circle, Clock3, FileText, History, Loader2, NotebookPen, Search, Send, Trash2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { caseService } from '../services/caseService.jsx';
-import { getConsultationHistory, sendConsultationMessage } from '../services/allyConsultationService.js';
+import { deleteConsultationHistory, getConsultationHistory, sendConsultationMessage } from '../services/allyConsultationService.js';
 import { documentService } from '../services/documentService.js';
 import { getAuthData } from '../utils/auth.jsx';
 import CaseDocumentManager from '../components/CaseDocumentManager.jsx';
@@ -130,6 +130,29 @@ const LegalWorkspacePage = () => {
       ragEnabled: item.ragEnabled || false,
       timestamp: item.createdAt
     });
+  };
+
+  const deleteHistoryItem = async (item, event) => {
+    event.stopPropagation();
+
+    const confirmed = window.confirm('Delete this AI chat from your history?');
+    if (!confirmed) return;
+
+    try {
+      await deleteConsultationHistory(item.historyId);
+      setAiHistory(prev => prev.filter(historyItem => historyItem.historyId !== item.historyId));
+
+      if (selectedHistoryId === item.historyId) {
+        setSelectedHistoryId(null);
+        setAiPrompt('');
+        setAiReply(null);
+      }
+
+      toast.success('AI chat deleted');
+    } catch (error) {
+      console.error('Error deleting AI chat history:', error);
+      toast.error('Failed to delete AI chat');
+    }
   };
 
   const participant = getParticipant(selectedCase, authData?.accountType);
@@ -355,21 +378,32 @@ const LegalWorkspacePage = () => {
                         <p className="text-sm text-gray-500">No saved AI consultations yet.</p>
                       ) : (
                         aiHistory.slice(0, 8).map(item => (
-                          <button
+                          <div
                             key={item.historyId}
                             onClick={() => openHistoryInChat(item)}
-                            className={`w-full p-3 text-left border rounded-md transition-colors ${
+                            className={`w-full p-3 text-left border rounded-md transition-colors cursor-pointer ${
                               selectedHistoryId === item.historyId
                                 ? 'border-blue-400 bg-blue-50'
                                 : 'border-gray-200 hover:bg-gray-50'
                             }`}
                           >
-                            <p className="text-xs text-gray-500">{formatDateTime(item.createdAt)}</p>
-                            <p className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2">{item.userMessage}</p>
-                            <div className="mt-2 text-sm text-gray-600 line-clamp-4">
-                              <MarkdownText text={item.aiResponse} />
+                            <div className="flex items-start gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs text-gray-500">{formatDateTime(item.createdAt)}</p>
+                                <p className="mt-1 text-sm font-semibold text-gray-900 line-clamp-2">{item.userMessage}</p>
+                                <div className="mt-2 text-sm text-gray-600 line-clamp-4">
+                                  <MarkdownText text={item.aiResponse} />
+                                </div>
+                              </div>
+                              <button
+                                onClick={(event) => deleteHistoryItem(item, event)}
+                                className="p-2 text-gray-400 rounded-md shrink-0 hover:text-red-600 hover:bg-red-50"
+                                title="Delete AI chat"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
-                          </button>
+                          </div>
                         ))
                       )}
                     </div>

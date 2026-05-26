@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Search, MessageSquarePlus, History, RotateCcw } from 'lucide-react';
-import { sendConsultationMessage, checkRagHealth, getConsultationHistory } from '../services/allyConsultationService';
+import { Send, Search, MessageSquarePlus, History, RotateCcw, Trash2 } from 'lucide-react';
+import { sendConsultationMessage, checkRagHealth, getConsultationHistory, deleteConsultationHistory } from '../services/allyConsultationService';
 import MarkdownText from './shared/MarkdownText';
 
 const AllyConsultationChat = () => {
@@ -157,6 +157,24 @@ const AllyConsultationChat = () => {
     setHasChatStarted(true);
   };
 
+  const deleteHistoryItem = async (item, event) => {
+    event.stopPropagation();
+
+    const confirmed = window.confirm('Delete this AI chat from your history?');
+    if (!confirmed) return;
+
+    try {
+      await deleteConsultationHistory(item.historyId);
+      setHistory(prev => prev.filter(historyItem => historyItem.historyId !== item.historyId));
+      setMessages(prev => prev.filter(message =>
+        message.id !== `history-user-${item.historyId}` && message.id !== `history-ai-${item.historyId}`
+      ));
+    } catch (error) {
+      console.error('Error deleting AI chat history:', error);
+      alert('Failed to delete AI chat history. Please try again.');
+    }
+  };
+
   return (
     <>
       {!hasChatStarted ? (
@@ -221,22 +239,31 @@ const AllyConsultationChat = () => {
               </div>
               <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg bg-white max-h-64 overflow-y-auto">
                 {history.slice(0, 8).map((item) => (
-                  <button
+                  <div
                     key={item.historyId}
                     onClick={() => openHistoryItem(item)}
-                    className="w-full px-4 py-3 text-left hover:bg-gray-50"
+                    className="flex items-start gap-3 px-4 py-3 text-left cursor-pointer hover:bg-gray-50"
                   >
-                    <p className="text-sm font-medium text-gray-800 truncate">{item.userMessage}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(item.createdAt).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                      {item.ragEnabled ? ' · Case search used' : ''}
-                    </p>
-                  </button>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-800 truncate">{item.userMessage}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(item.createdAt).toLocaleString([], {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                        {item.ragEnabled ? ' · Case search used' : ''}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(event) => deleteHistoryItem(item, event)}
+                      className="p-2 text-gray-400 rounded-md hover:text-red-600 hover:bg-red-50"
+                      title="Delete AI chat"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>

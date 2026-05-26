@@ -314,6 +314,30 @@ public class ChatController {
         }
     }
 
+    @DeleteMapping("/history/{historyId}")
+    public ResponseEntity<?> deleteChatHistory(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable int historyId) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body("Missing authorization token");
+            }
+
+            int userId = Integer.parseInt(jwtUtil.extractUserId(authHeader.substring(7)));
+            boolean deleted = aiChatHistoryService.deleteForUser(historyId, userId);
+
+            if (!deleted) {
+                return ResponseEntity.status(404).body("AI chat history entry not found");
+            }
+
+            auditLogService.log(userId, "DELETE_AI_CHAT", "AI_CHAT_HISTORY", "AI", String.valueOf(historyId),
+                "Deleted AI chat history entry", "SUCCESS");
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Failed to delete AI chat history: " + e.getMessage());
+        }
+    }
+
     private void saveHistoryIfAuthenticated(HttpServletRequest request, String userMessage, ChatResponse chatResponse) {
         saveHistoryIfAuthenticated(extractOptionalUserId(request), userMessage, chatResponse);
     }

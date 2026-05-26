@@ -46,6 +46,12 @@ export const getConsultationHistory = async (limit = 50) => {
   return response.data || [];
 };
 
+export const deleteConsultationHistory = async (historyId) => {
+  await axios.delete(`${API_BASE_URL}/api/chat/history/${historyId}`, {
+    headers: authHeader()
+  });
+};
+
 const authHeader = () => {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};

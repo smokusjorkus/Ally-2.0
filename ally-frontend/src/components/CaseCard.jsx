@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, User, FileText, Clock, CheckCircle, XCircle, AlertCircle, Check, X, Trash2 } from 'lucide-react';
+import { Calendar, User, Clock, CheckCircle, XCircle, AlertCircle, Check, X, Trash2, MapPin } from 'lucide-react';
 
-const CaseCard = ({ case_, userRole, onStatusChange, onDeleteCase, onAppointmentBooked, onCardClick }) => {
+const CaseCard = ({ case_, userRole, onStatusChange, onDeleteCase, onAppointmentBooked, onCardClick, onTrackCase }) => {
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -69,6 +69,13 @@ const CaseCard = ({ case_, userRole, onStatusChange, onDeleteCase, onAppointment
   };
 
   const canClientDelete = userRole === 'CLIENT' && ['PENDING', 'DECLINED'].includes(case_.status);
+
+  const handleTrackCase = (e) => {
+    e.stopPropagation();
+    onTrackCase?.(case_.caseId);
+    const tracker = document.getElementById('case-tracker-panel');
+    tracker?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const handleDeleteCase = async (e) => {
     e.stopPropagation();
@@ -145,6 +152,14 @@ const CaseCard = ({ case_, userRole, onStatusChange, onDeleteCase, onAppointment
 
         {/* Status and Actions */}
         <div className="flex items-center space-x-3 ml-4">
+          <button
+            onClick={handleTrackCase}
+            className="flex items-center px-3 py-1.5 text-xs text-blue-700 transition-colors bg-blue-50 border border-blue-200 rounded hover:bg-blue-100"
+          >
+            <MapPin className="w-3 h-3 mr-1" />
+            Track
+          </button>
+
           {/* Status Badge */}
           <div className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-medium ${getStatusColor(case_.status)}`}>
             {getStatusIcon(case_.status)}

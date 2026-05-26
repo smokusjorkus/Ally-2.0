@@ -33,4 +33,13 @@ public class AiChatHistoryService {
         int boundedLimit = Math.max(1, Math.min(limit, 100));
         return aiChatHistoryRepo.findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(0, boundedLimit));
     }
+
+    public boolean deleteForUser(int historyId, int userId) {
+        return aiChatHistoryRepo.findByHistoryIdAndUserId(historyId, userId)
+            .map(history -> {
+                aiChatHistoryRepo.delete(history);
+                return true;
+            })
+            .orElse(false);
+    }
 }

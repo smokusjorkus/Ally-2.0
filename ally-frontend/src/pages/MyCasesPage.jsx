@@ -4,6 +4,7 @@ import { getAuthData } from '../utils/auth.jsx';
 import { caseService } from '../services/caseService.jsx';
 import CasesList from '../components/CasesList.jsx';
 import CaseSubmissionForm from '../components/CaseSubmissionForm.jsx';
+import CaseTracker from '../components/CaseTracker.jsx';
 
 const MyCasesPage = () => {
   const [cases, setCases] = useState([]);
@@ -12,6 +13,7 @@ const MyCasesPage = () => {
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [authData, setAuthData] = useState(null);
+  const [trackedCaseId, setTrackedCaseId] = useState(null);
 
   // Get auth data on component mount
   useEffect(() => {
@@ -46,7 +48,9 @@ const MyCasesPage = () => {
         casesData = await caseService.getLawyerCases(authData.userId);
       }
 
-      setCases((casesData || []).filter(case_ => case_.status !== 'CANCELLED'));
+      const visibleCases = (casesData || []).filter(case_ => case_.status !== 'CANCELLED');
+      setCases(visibleCases);
+      setTrackedCaseId(current => current || visibleCases[0]?.caseId || null);
     } catch (err) {
       console.error('Error fetching cases:', err);
       setError(err.message || 'Failed to fetch cases');
@@ -99,6 +103,7 @@ const MyCasesPage = () => {
     try {
       await caseService.deleteClientCase(caseId);
       setCases(prevCases => prevCases.filter(case_ => case_.caseId !== caseId));
+      setTrackedCaseId(current => current === caseId ? null : current);
       return true;
     } catch (err) {
       console.error('Error deleting case:', err);
@@ -194,13 +199,23 @@ const MyCasesPage = () => {
               <option value="ACCEPTED">Accepted</option>
               <option value="DECLINED">Declined</option>
             </select>
-          </div>          {/* Cases List */}
+          </div>
+
+          <CaseTracker
+            cases={filteredCases.length > 0 ? filteredCases : cases}
+            selectedCaseId={trackedCaseId}
+            onSelectCase={setTrackedCaseId}
+            userRole={authData?.accountType}
+          />
+
+          {/* Cases List */}
           <CasesList
             cases={filteredCases}
             userRole={authData?.accountType}
             onStatusChange={handleStatusChange}
             onDeleteCase={handleDeleteCase}
             onAppointmentBooked={handleAppointmentBooked}
+            onTrackCase={setTrackedCaseId}
           />
         </div>
       </div>
