@@ -29,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
 import com.google.firebase.cloud.StorageClient;
+import com.wachichaw.Audit.Service.AuditLogService;
 import com.wachichaw.Case.Entity.LegalCasesEntity;
 import com.wachichaw.Case.Repo.LegalCaseRepo;
 import com.wachichaw.Config.JwtUtil;
@@ -52,6 +53,8 @@ public class DocumentController {
     private LegalCaseRepo legalCaseRepo;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Value("${storage.type:local}")
     private String storageType;
@@ -153,6 +156,10 @@ public class DocumentController {
             DocumentEntity document = documentService.uploadDocumentToCase(
                 legalCase, userId, file, documentName, documentType, status);
 
+            auditLogService.log(userId, "UPLOAD_DOCUMENT", "DOCUMENT", "DOCUMENT",
+                String.valueOf(document.getDocument_id()),
+                "Uploaded document '" + documentName + "' to case #" + caseId, "SUCCESS");
+
             DocumentDTO documentDTO = new DocumentDTO(document);
             return ResponseEntity.ok(documentDTO);
 
@@ -178,6 +185,8 @@ public class DocumentController {
             boolean deleted = documentService.deleteDocument(documentId, userId, userRole);
             
             if (deleted) {
+                auditLogService.log(userId, "DELETE_DOCUMENT", "DOCUMENT", "DOCUMENT",
+                    String.valueOf(documentId), "Deleted document #" + documentId, "SUCCESS");
                 return ResponseEntity.ok("Document deleted successfully");
             } else {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

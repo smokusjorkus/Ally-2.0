@@ -12,7 +12,10 @@ export const sendConsultationMessage = async (message, useRAG = false) => {
         useRAG
       }, 
       {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeader()
+        },
         responseType: 'json',
       }
     );
@@ -32,6 +35,20 @@ export const sendConsultationMessage = async (message, useRAG = false) => {
     // Network error or other issues
     throw error;
   }
+};
+
+export const getConsultationHistory = async (limit = 50) => {
+  const response = await axios.get(`${API_BASE_URL}/api/chat/history`, {
+    params: { limit },
+    headers: authHeader()
+  });
+
+  return response.data || [];
+};
+
+const authHeader = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 // Helper function to parse response data consistently

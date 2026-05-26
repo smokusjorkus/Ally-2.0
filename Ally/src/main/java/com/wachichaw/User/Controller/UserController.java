@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Blob;
 import com.google.firebase.cloud.StorageClient;
+import com.wachichaw.Audit.Service.AuditLogService;
 import com.wachichaw.Admin.Entity.AdminEntity;
 import com.wachichaw.Admin.Service.AdminService;
 import com.wachichaw.Client.Entity.ClientEntity;
@@ -56,6 +57,8 @@ public class UserController {
     private UserRepo userRepo;
     @Autowired
     private JwtUtil jwtUtil;
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Autowired
     private LawyerRepo lawyerRepo;
@@ -284,20 +287,30 @@ public class UserController {
 
     @PostMapping("/login")
     @Operation(summary = "Login a user")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest loginRequest) {
-        String token = userService.authenticate(loginRequest.getEmail(), loginRequest.getPassword());
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        try {
+            String token = userService.authenticate(loginRequest.getEmail(), loginRequest.getPassword());
 
-        int id = Integer.parseInt(jwtUtil.extractUserId(token));
-        String email = jwtUtil.extractEmail(token);
-        String accountType = jwtUtil.extractAccountType(token);
-        String profilePhoto = jwtUtil.extractProfilePhoto(token);
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("id", id);
-        response.put("email", email);
-        response.put("accountType", accountType);
-        response.put("profilePhoto", profilePhoto);
-        return ResponseEntity.ok(response);
+            int id = Integer.parseInt(jwtUtil.extractUserId(token));
+            String email = jwtUtil.extractEmail(token);
+            String accountType = jwtUtil.extractAccountType(token);
+            String profilePhoto = jwtUtil.extractProfilePhoto(token);
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("id", id);
+            response.put("email", email);
+            response.put("accountType", accountType);
+            response.put("profilePhoto", profilePhoto);
+            try {
+                auditLogService.log(id, "LOGIN", "AUTH", "USER", String.valueOf(id), "User logged in", "SUCCESS");
+            } catch (Exception auditError) {
+                auditError.printStackTrace();
+            }
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
     }    
     @GetMapping("/getAll")
     @Operation(summary = "Get all users", description = "Retrieves a list of all users.")

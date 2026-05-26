@@ -23,6 +23,7 @@ import com.wachichaw.Case.Entity.LegalCasesEntity;
 import com.wachichaw.Case.Repo.LegalCaseRepo;
 import com.wachichaw.Case.Entity.LegalCaseResponseDTO;
 import com.wachichaw.Case.Service.LegalCaseService;
+import com.wachichaw.Audit.Service.AuditLogService;
 import com.wachichaw.Lawyer.Entity.LawyerEntity;
 import com.wachichaw.Lawyer.Service.LawyerService;
 import com.wachichaw.User.Repo.UserRepo;
@@ -37,6 +38,8 @@ public class LegalCasesController {
     private final LegalCaseService LegalCaseService;
     @Autowired
     private LawyerService lawyerservice;
+    @Autowired
+    private AuditLogService auditLogService;
 
     public LegalCasesController(LegalCaseService legalCaseService) {
         this.LegalCaseService = legalCaseService;
@@ -65,6 +68,8 @@ public class LegalCasesController {
             request.getStatus()
         );
 
+        auditLogService.log(clientId, "CREATE_CASE", "CASE", "CASE", String.valueOf(legalCase.getCaseId()),
+            "Client submitted legal case: " + legalCase.getTitle(), "SUCCESS");
         return ResponseEntity.ok(legalCase);
 
     } catch (Exception e) {
@@ -104,6 +109,8 @@ public class LegalCasesController {
         try {
             // The service method LegalCaseService.acceptCase now contains the refined logic
             LegalCasesEntity updatedCase = LegalCaseService.acceptCase(caseId, lawyerId);
+            auditLogService.log(lawyerId, "ACCEPT_CASE", "CASE", "CASE", String.valueOf(caseId),
+                "Lawyer accepted case #" + caseId, "SUCCESS");
             return ResponseEntity.ok(updatedCase);
         } catch (RuntimeException e) { // Catch specific exceptions if preferred
             e.printStackTrace(); // Or log more appropriately
@@ -118,6 +125,8 @@ public class LegalCasesController {
     public ResponseEntity<LegalCasesEntity> declineCase(@PathVariable int caseId, @PathVariable int lawyerId) {
         try {
             LegalCasesEntity updatedCase = LegalCaseService.declineCase(caseId, lawyerId); // Calling the new service method
+            auditLogService.log(lawyerId, "DECLINE_CASE", "CASE", "CASE", String.valueOf(caseId),
+                "Lawyer declined case #" + caseId, "SUCCESS");
             return ResponseEntity.ok(updatedCase);
         } catch (RuntimeException e) { // Catch specific exceptions if preferred
             e.printStackTrace(); // Or log more appropriately
@@ -132,6 +141,8 @@ public class LegalCasesController {
     public ResponseEntity<Void> deleteClientCase(@PathVariable int caseId, @PathVariable int clientId) {
         try {
             LegalCaseService.deleteClientCase(caseId, clientId);
+            auditLogService.log(clientId, "DELETE_CASE", "CASE", "CASE", String.valueOf(caseId),
+                "Client removed case #" + caseId, "SUCCESS");
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -146,6 +157,8 @@ public class LegalCasesController {
     private ResponseEntity<LegalCasesEntity> updateStatus(int caseId, CaseStatus status) {
         try {
             LegalCasesEntity updatedCase = LegalCaseService.updateCaseStatus(caseId, status);
+            auditLogService.log((Integer) null, "UPDATE_CASE_STATUS", "CASE", "CASE", String.valueOf(caseId),
+                "Case status changed to " + status, "SUCCESS");
             return ResponseEntity.ok(updatedCase);
         } catch (Exception e) {
             e.printStackTrace();
