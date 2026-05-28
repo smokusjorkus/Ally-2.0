@@ -12,6 +12,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +44,7 @@ import org.springframework.http.MediaType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.net.URLEncoder;
+import java.net.URI;
 
 import com.google.firebase.FirebaseApp;
 
@@ -190,6 +194,45 @@ public class UserController {
         }
     }
 
+    @GetMapping("/lawyerCredentials/{id}")
+    public ResponseEntity<?> viewLawyerCredentials(@PathVariable int id) {
+        LawyerEntity lawyer = lawyerRepo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lawyer not found"));
+
+        String credentials = lawyer.getCredentials();
+        if (credentials == null || credentials.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No credentials uploaded");
+        }
+
+        if (credentials.startsWith("http://") || credentials.startsWith("https://")) {
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(credentials))
+                .build();
+        }
+
+        try {
+            Path filePath = Paths.get(credentials).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Credential file not found");
+            }
+
+            String contentType = Files.probeContentType(filePath);
+            if (contentType == null) {
+                contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+            }
+
+            return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Failed to open credential file: " + e.getMessage());
+        }
+    }
+ 
     @PutMapping("/lawyerUpdate/{id}")
     public ResponseEntity<LawyerEntity> updateLawyer(
             @PathVariable int id,

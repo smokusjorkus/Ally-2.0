@@ -564,12 +564,16 @@ const LawyerDetailsContent = ({ lawyer }) => {
 
 const LawyerCredentialsContent = ({ lawyer }) => {
   const handleViewDocument = (file) => {
-    if (typeof file === 'string') {
+    if (typeof file === 'string' && /^https?:\/\//i.test(file)) {
       window.open(file, '_blank');
     } else if (file && file.url) {
       window.open(file.url, '_blank');
+    } else {
+      window.open(`${import.meta.env.VITE_API_BASE_URL}/users/lawyerCredentials/${lawyer.id}`, '_blank');
     }
   };
+
+  const credentialFileName = getCredentialFileName(lawyer.credentials);
 
   return (
     <div className="space-y-8">
@@ -634,9 +638,7 @@ const LawyerCredentialsContent = ({ lawyer }) => {
                 <div className="flex-1">
                   <h5 className="text-sm font-medium text-gray-900">Bar License Certificate</h5>
                   <p className="text-sm text-gray-500">
-                    {typeof lawyer.credentials === 'string' 
-                      ? lawyer.credentials 
-                      : lawyer.credentials.name}
+                    {credentialFileName}
                   </p>
                 </div>
                 <button 
@@ -657,6 +659,14 @@ const LawyerCredentialsContent = ({ lawyer }) => {
       </div>
     </div>
   );
+};
+
+const getCredentialFileName = (credentials) => {
+  if (!credentials) return 'No file selected';
+  if (typeof credentials !== 'string') return credentials.name || 'Uploaded credential file';
+
+  const normalized = credentials.replace(/\\/g, '/');
+  return normalized.split('/').pop() || 'Uploaded credential file';
 };
 
 export default LawyerVerificationTable;
