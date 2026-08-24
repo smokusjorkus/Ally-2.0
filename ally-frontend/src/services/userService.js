@@ -192,6 +192,51 @@ export const userService = {
     }
   },
 
+  async exportUsers({ userIds } = {}) {
+    try {
+      const response = await axios.get(`${API_URL}/users/getAll`);
+      const selectedIds = new Set((userIds || []).map(id => Number(id)));
+      const users = selectedIds.size
+        ? response.data.filter(user => selectedIds.has(Number(user.userId || user.id)))
+        : response.data;
+
+      const headers = ['ID', 'First Name', 'Last Name', 'Email', 'Role', 'Verified', 'Created At'];
+      const rows = users.map(user => [
+        user.userId || user.id || '',
+        user.Fname || user.firstName || '',
+        user.Lname || user.lastName || '',
+        user.email || '',
+        user.accountType || '',
+        user.verified ?? user.isVerified ?? false,
+        user.createdAt || ''
+      ]);
+
+      const escapeCsvValue = (value) => {
+        const text = String(value ?? '');
+        return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+      };
+
+      const csv = [headers, ...rows]
+        .map(row => row.map(escapeCsvValue).join(','))
+        .join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ally-users-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      return { exportedCount: users.length };
+    } catch (error) {
+      console.error('Error exporting users:', error);
+      throw error;
+    }
+  },
+
   async getLawyerStatus(userId) {
     try {
       // Get both verified and unverified lawyers

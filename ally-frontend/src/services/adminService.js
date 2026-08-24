@@ -46,7 +46,7 @@ export const adminService = {
     try {
       // Get all users and lawyers
       const [allUsers, verifiedLawyers, unverifiedLawyers] = await Promise.all([
-        axios.get(`${API_URL}/users/all`),
+        axios.get(`${API_URL}/users/getAll`),
         axios.get(`${API_URL}/lawyers/verified`),
         axios.get(`${API_URL}/lawyers/unverified`)
       ]);
@@ -60,7 +60,8 @@ export const adminService = {
       // Process all users
       return allUsers.data.map(user => {
         const isLawyer = user.accountType === 'LAWYER';
-        const lawyerDetails = isLawyer ? lawyersMap.get(user.id) : null;
+        const userId = user.userId || user.id;
+        const lawyerDetails = isLawyer ? lawyersMap.get(userId) : null;
 
         // Extract first and last name from email if not provided
         let firstName = user.Fname || user.firstName;
@@ -78,6 +79,8 @@ export const adminService = {
 
         return {
           ...user,
+          id: userId,
+          userId,
           // Ensure consistent name fields
           firstName: firstName || '',
           lastName: lastName || '',

@@ -4,6 +4,9 @@
 # Ignore application.properties
 /src/main/resources/application.properties
 
+#local-storage
+/local-storage/
+
 # Log files
 *.log
 

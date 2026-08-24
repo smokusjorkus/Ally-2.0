@@ -368,6 +368,32 @@ public class UserService {
         return userRepo.findById(id);
     }
 
+    public UserEntity updateUserStatus(int id, String status) {
+        UserEntity user = userRepo.findById(id)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + id));
+
+        String normalizedStatus = status.trim().toLowerCase();
+        if ("active".equals(normalizedStatus) || "approved".equals(normalizedStatus) || "verified".equals(normalizedStatus)) {
+            user.setVerified(true);
+        } else if ("inactive".equals(normalizedStatus) || "deactivated".equals(normalizedStatus) || "rejected".equals(normalizedStatus)) {
+            user.setVerified(false);
+        } else {
+            throw new IllegalArgumentException("Unsupported status: " + status);
+        }
+
+        return userRepo.save(user);
+    }
+
+    public List<UserEntity> bulkUpdateUserStatus(List<Integer> userIds, String status) {
+        if (userIds == null || userIds.isEmpty()) {
+            throw new IllegalArgumentException("At least one user must be selected");
+        }
+
+        return userIds.stream()
+            .map(id -> updateUserStatus(id, status))
+            .toList();
+    }
+
      
     public String deleteUser(int id) {
         String msg = " ";

@@ -48,7 +48,6 @@ import java.net.URI;
 
 import com.google.firebase.FirebaseApp;
 
-
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -80,9 +79,8 @@ public class UserController {
     private Bucket firebaseBucket() {
         if (FirebaseApp.getApps().isEmpty()) {
             throw new ResponseStatusException(
-                HttpStatus.SERVICE_UNAVAILABLE,
-                "Firebase Storage is not configured on the backend"
-            );
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Firebase Storage is not configured on the backend");
         }
         return StorageClient.getInstance().bucket();
     }
@@ -103,10 +101,9 @@ public class UserController {
         String encodedFileName = URLEncoder.encode(blob.getName(), StandardCharsets.UTF_8);
 
         return String.format(
-            "https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media",
-            bucket.getName(),
-            encodedFileName
-        );
+                "https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media",
+                bucket.getName(),
+                encodedFileName);
     }
 
     private String storeUpload(String folder, MultipartFile file) throws java.io.IOException {
@@ -130,11 +127,51 @@ public class UserController {
         return target.toString();
     }
 
+    private Path resolveStoredUploadPath(String storedPath, String folder) {
+        Path stored = Paths.get(storedPath).normalize();
+        if (Files.exists(stored)) {
+            return stored;
+        }
+
+        Path cwd = Paths.get(System.getProperty("user.dir"));
+        Path fromCurrentDirectory = cwd.resolve(storedPath).normalize();
+        if (Files.exists(fromCurrentDirectory)) {
+            return fromCurrentDirectory;
+        }
+
+        Path fileName = stored.getFileName();
+        if (fileName == null) {
+            return stored;
+        }
+
+        Path fromConfiguredStorage = Paths.get(localStoragePath, folder, fileName.toString()).normalize();
+        if (Files.exists(fromConfiguredStorage)) {
+            return fromConfiguredStorage;
+        }
+
+        Path fromCurrentConfiguredStorage = cwd.resolve(fromConfiguredStorage).normalize();
+        if (Files.exists(fromCurrentConfiguredStorage)) {
+            return fromCurrentConfiguredStorage;
+        }
+
+        Path projectRoot = "Ally".equalsIgnoreCase(cwd.getFileName() != null ? cwd.getFileName().toString() : "")
+                ? cwd.getParent()
+                : cwd;
+        if (projectRoot != null) {
+            Path fromProjectStorage = projectRoot.resolve("local-storage").resolve(folder).resolve(fileName.toString())
+                    .normalize();
+            if (Files.exists(fromProjectStorage)) {
+                return fromProjectStorage;
+            }
+        }
+
+        return fromConfiguredStorage;
+    }
+
     @PutMapping("/adminUpdate/{id}")
     public ResponseEntity<AdminEntity> updateAdmin(
             @PathVariable int id,
-            @RequestBody AdminEntity admin
-    ) {
+            @RequestBody AdminEntity admin) {
         AdminEntity updated = userService.updateAdmin(
                 id,
                 admin.getEmail(),
@@ -145,16 +182,14 @@ public class UserController {
                 admin.getAddress(),
                 admin.getCity(),
                 admin.getProvince(),
-                admin.getZip()
-        );
+                admin.getZip());
         return ResponseEntity.ok(updated);
     }
 
     @PutMapping("/clientUpdate/{id}")
     public ResponseEntity<ClientEntity> updateClient(
             @PathVariable int id,
-            @RequestBody ClientEntity client
-    ) {
+            @RequestBody ClientEntity client) {
         ClientEntity updated = userService.updateClient(
                 id,
                 client.getEmail(),
@@ -166,15 +201,14 @@ public class UserController {
                 client.getCity(),
                 client.getProvince(),
                 client.getZip(),
-                client.getProfilePhotoUrl()
-        );
+                client.getProfilePhotoUrl());
         return ResponseEntity.ok(updated);
     }
+
     @PutMapping("/lawyerUpdate/credentials/{id}")
     public ResponseEntity<LawyerEntity> updateLawyerCredentials(
             @PathVariable int id,
-            @RequestParam("credentials") MultipartFile credentialsFile
-    ) throws java.io.IOException {
+            @RequestParam("credentials") MultipartFile credentialsFile) throws java.io.IOException {
         String credentialsFileURL = storeUpload("credentials", credentialsFile);
         LawyerEntity updated = userService.updateLawyerCredentials(id, credentialsFileURL);
         return ResponseEntity.ok(updated);
@@ -197,7 +231,7 @@ public class UserController {
     @GetMapping("/lawyerCredentials/{id}")
     public ResponseEntity<?> viewLawyerCredentials(@PathVariable int id) {
         LawyerEntity lawyer = lawyerRepo.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lawyer not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lawyer not found"));
 
         String credentials = lawyer.getCredentials();
         if (credentials == null || credentials.trim().isEmpty()) {
@@ -206,12 +240,12 @@ public class UserController {
 
         if (credentials.startsWith("http://") || credentials.startsWith("https://")) {
             return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(credentials))
-                .build();
+                    .location(URI.create(credentials))
+                    .build();
         }
 
         try {
-            Path filePath = Paths.get(credentials).normalize();
+            Path filePath = resolveStoredUploadPath(credentials, "credentials");
             Resource resource = new UrlResource(filePath.toUri());
 
             if (!resource.exists() || !resource.isReadable()) {
@@ -224,21 +258,19 @@ public class UserController {
             }
 
             return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
-                .body(resource);
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Failed to open credential file: " + e.getMessage());
+                    .body("Failed to open credential file: " + e.getMessage());
         }
     }
- 
+
     @PutMapping("/lawyerUpdate/{id}")
     public ResponseEntity<LawyerEntity> updateLawyer(
             @PathVariable int id,
-            @RequestBody LawyerEntity lawyer
-    ) 
-    {
+            @RequestBody LawyerEntity lawyer) {
         LawyerEntity updated = userService.updateLawyer(
                 id,
                 lawyer.getEmail(),
@@ -254,79 +286,76 @@ public class UserController {
                 lawyer.getSpecialization(),
                 lawyer.getExperience(),
                 lawyer.getCredentials(),
-                lawyer.getEducationInstitution() 
-        );
+                lawyer.getEducationInstitution());
         return ResponseEntity.ok(updated);
     }
-     
-     @PostMapping(value = "/Client", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+
+    @PostMapping(value = "/Client", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ClientEntity> createClient(
-        @RequestParam("email") String email,
-        @RequestParam("password") String password,
-        @RequestParam("Fname") String fname,
-        @RequestParam("Lname") String lname,
-        @RequestParam("phoneNumber") Long phoneNumber,
-        @RequestParam("address") String address,
-        @RequestParam("city") String city,
-        @RequestParam("province") String province,
-        @RequestParam("zip") String zip,
-        @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile
-    ) throws java.io.IOException {
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("Fname") String fname,
+            @RequestParam("Lname") String lname,
+            @RequestParam("phoneNumber") Long phoneNumber,
+            @RequestParam("address") String address,
+            @RequestParam("city") String city,
+            @RequestParam("province") String province,
+            @RequestParam("zip") String zip,
+            @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile)
+            throws java.io.IOException {
         String profilePhotoUrl = storeUpload("profile_pictures", profilePhotoFile);
-        ClientEntity client = userService.createClient(email, password, fname, lname, 
-                                        phoneNumber, address, city, province, zip, profilePhotoUrl);
+        ClientEntity client = userService.createClient(email, password, fname, lname,
+                phoneNumber, address, city, province, zip, profilePhotoUrl);
         return ResponseEntity.ok(client);
     }
 
     @PostMapping("/Admin")
     public AdminEntity createAdmin(@RequestBody AdminEntity admin) {
-        return userService.createAdmin(admin.getEmail(), admin.getPassword(), admin.getFname(), admin.getLname(), 
-                                        admin.getPhoneNumber(), admin.getAddress(), admin.getCity(), 
-                                        admin.getProvince(), admin.getZip());
+        return userService.createAdmin(admin.getEmail(), admin.getPassword(), admin.getFname(), admin.getLname(),
+                admin.getPhoneNumber(), admin.getAddress(), admin.getCity(),
+                admin.getProvince(), admin.getZip());
     }
 
     @PostMapping(value = "/Lawyer", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<LawyerEntity> createLawyer(
-    @RequestParam("email") String email,
-    @RequestParam("password") String password,
-    @RequestParam("Fname") String fname,
-    @RequestParam("Lname") String lname,
-    @RequestParam("phoneNumber") Long phoneNumber,
-    @RequestParam("address") String address,
-    @RequestParam("city") String city,
-    @RequestParam("province") String province,
-    @RequestParam("zip") String zip,
-    @RequestParam("barNumber") String barNumber,
-    @RequestParam("specialization") List<String> specialization,
-    @RequestParam("experience") String experience,
-    @RequestParam("credentials") MultipartFile credentialsFile,
-    @RequestParam(value = "educationInstitution", required = false) String educationInstitution,
-    @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile
-) throws java.io.IOException {
-    String profilePhotoUrl = storeUpload("profile_pictures", profilePhotoFile);
-    String credentialsFileURL = storeUpload("credentials", credentialsFile);
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            @RequestParam("Fname") String fname,
+            @RequestParam("Lname") String lname,
+            @RequestParam("phoneNumber") Long phoneNumber,
+            @RequestParam("address") String address,
+            @RequestParam("city") String city,
+            @RequestParam("province") String province,
+            @RequestParam("zip") String zip,
+            @RequestParam("barNumber") String barNumber,
+            @RequestParam("specialization") List<String> specialization,
+            @RequestParam("experience") String experience,
+            @RequestParam("credentials") MultipartFile credentialsFile,
+            @RequestParam(value = "educationInstitution", required = false) String educationInstitution,
+            @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhotoFile)
+            throws java.io.IOException {
+        String profilePhotoUrl = storeUpload("profile_pictures", profilePhotoFile);
+        String credentialsFileURL = storeUpload("credentials", credentialsFile);
 
-    LawyerEntity lawyer = userService.createLawyer(
-        email,
-        password,
-        fname,
-        lname,
-        phoneNumber,
-        address,
-        city,
-        province,
-        zip,
-        barNumber,
-        specialization,
-        experience,
-        credentialsFileURL,
-        educationInstitution,
-        profilePhotoUrl
-    );
+        LawyerEntity lawyer = userService.createLawyer(
+                email,
+                password,
+                fname,
+                lname,
+                phoneNumber,
+                address,
+                city,
+                province,
+                zip,
+                barNumber,
+                specialization,
+                experience,
+                credentialsFileURL,
+                educationInstitution,
+                profilePhotoUrl);
 
-    return ResponseEntity.ok(lawyer);
-}
-
+        return ResponseEntity.ok(lawyer);
+    }
 
     @PostMapping("/login")
     @Operation(summary = "Login a user")
@@ -354,7 +383,8 @@ public class UserController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
-    }    
+    }
+
     @GetMapping("/getAll")
     @Operation(summary = "Get all users", description = "Retrieves a list of all users.")
     public List<UserEntity> getAllUser() {
@@ -377,12 +407,67 @@ public class UserController {
         }
     }
 
+    @PutMapping("/updateStatus/{userId}")
+    @Operation(summary = "Update user status", description = "Activates or deactivates a user account.")
+    public ResponseEntity<?> updateUserStatus(
+            @PathVariable int userId,
+            @RequestBody Map<String, String> request) {
+        String status = request.get("status");
+        if (status == null || status.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Status is required"));
+        }
+
+        try {
+            UserEntity updatedUser = userService.updateUserStatus(userId, status);
+            return ResponseEntity.ok(updatedUser);
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/bulkUpdateStatus")
+    @Operation(summary = "Bulk update user status", description = "Activates or deactivates multiple user accounts.")
+    public ResponseEntity<?> bulkUpdateStatus(@RequestBody Map<String, Object> request) {
+        Object userIdsValue = request.get("userIds");
+        Object statusValue = request.get("status");
+
+        if (!(userIdsValue instanceof List<?>) || statusValue == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "userIds and status are required"));
+        }
+
+        List<Integer> userIds = ((List<?>) userIdsValue).stream()
+                .map(value -> {
+                    if (value instanceof Number number) {
+                        return number.intValue();
+                    }
+                    return Integer.parseInt(String.valueOf(value));
+                })
+                .collect(Collectors.toList());
+
+        try {
+            List<UserEntity> updatedUsers = userService.bulkUpdateUserStatus(userIds, String.valueOf(statusValue));
+            return ResponseEntity.ok(Map.of(
+                    "message", "User statuses updated",
+                    "updatedCount", updatedUsers.size()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @DeleteMapping("/deleteUser{userId}")
     @Operation(summary = "Delete a user", description = "Deletes a user by their ID.")
     public String DeleteUser(@PathVariable int userId) {
         return userService.deleteUser(userId);
     }
-    
+
+    @DeleteMapping("/deleteUser/{userId}")
+    @Operation(summary = "Delete a user", description = "Deletes a user by their ID.")
+    public String deleteUserWithSlash(@PathVariable int userId) {
+        return userService.deleteUser(userId);
+    }
+
     @Autowired
     private LawyerService lawyerService;
 
@@ -394,76 +479,76 @@ public class UserController {
             @RequestParam(required = false) String province,
             @RequestParam(required = false) String experience,
             @RequestParam(required = false) String name) {
-        
+
         // Get all lawyers from the database
         List<LawyerEntity> allLawyers = userRepo.findAll().stream()
                 .filter(user -> user.getAccountType() == AccountType.LAWYER)
                 .map(user -> (LawyerEntity) user)
                 .collect(Collectors.toList());
-        
+
         // Apply filters
         List<LawyerEntity> filteredLawyers = allLawyers.stream()
                 .filter(lawyer -> {
                     boolean matches = true;
-                    
+
                     // Filter by specialization
-                    if (specialization != null && !specialization.trim().isEmpty() 
-                        && !specialization.equalsIgnoreCase("All Specialties")) {
-                        matches = matches && lawyer.getSpecialization() != null 
+                    if (specialization != null && !specialization.trim().isEmpty()
+                            && !specialization.equalsIgnoreCase("All Specialties")) {
+                        matches = matches && lawyer.getSpecialization() != null
                                 && lawyer.getSpecialization().stream()
-                                    .anyMatch(spec -> spec.toLowerCase().contains(specialization.toLowerCase()));
+                                        .anyMatch(spec -> spec.toLowerCase().contains(specialization.toLowerCase()));
                     }
-                    
+
                     // Filter by city
-                    if (city != null && !city.trim().isEmpty() 
-                        && !city.equalsIgnoreCase("All Locations")) {
-                        matches = matches && lawyer.getCity() != null 
+                    if (city != null && !city.trim().isEmpty()
+                            && !city.equalsIgnoreCase("All Locations")) {
+                        matches = matches && lawyer.getCity() != null
                                 && lawyer.getCity().toLowerCase().contains(city.toLowerCase());
                     }
-                    
+
                     // Filter by province
-                    if (province != null && !province.trim().isEmpty() 
-                        && !province.equalsIgnoreCase("All Locations")) {
-                        matches = matches && lawyer.getProvince() != null 
+                    if (province != null && !province.trim().isEmpty()
+                            && !province.equalsIgnoreCase("All Locations")) {
+                        matches = matches && lawyer.getProvince() != null
                                 && lawyer.getProvince().toLowerCase().contains(province.toLowerCase());
                     }
-                    
+
                     // Filter by experience
                     if (experience != null && !experience.trim().isEmpty()) {
-                        matches = matches && lawyer.getExperience() != null 
+                        matches = matches && lawyer.getExperience() != null
                                 && lawyer.getExperience().toLowerCase().contains(experience.toLowerCase());
                     }
-                    
+
                     // Filter by name (first name or last name)
                     if (name != null && !name.trim().isEmpty()) {
-                        matches = matches && ((lawyer.getFname() != null 
+                        matches = matches && ((lawyer.getFname() != null
                                 && lawyer.getFname().toLowerCase().contains(name.toLowerCase()))
-                                || (lawyer.getLname() != null 
-                                && lawyer.getLname().toLowerCase().contains(name.toLowerCase())));
+                                || (lawyer.getLname() != null
+                                        && lawyer.getLname().toLowerCase().contains(name.toLowerCase())));
                     }
-                    
+
                     return matches;
                 })
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(filteredLawyers);
     }
-    
+
     @GetMapping("/specializations")
     @Operation(summary = "Get all unique specializations", description = "Returns all unique specializations available")
     public ResponseEntity<List<String>> getAllSpecializations() {
         List<String> specializations = userRepo.findAll().stream()
                 .filter(user -> user.getAccountType() == AccountType.LAWYER)
                 .map(user -> (LawyerEntity) user)
-                .flatMap(lawyer -> lawyer.getSpecialization() != null ? 
-                        lawyer.getSpecialization().stream() : java.util.stream.Stream.empty())
+                .flatMap(lawyer -> lawyer.getSpecialization() != null ? lawyer.getSpecialization().stream()
+                        : java.util.stream.Stream.empty())
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(specializations);
     }
-    
+
     @GetMapping("/locations")
     @Operation(summary = "Get all unique locations", description = "Returns all unique cities and provinces")
     public ResponseEntity<List<String>> getAllLocations() {
@@ -476,7 +561,8 @@ public class UserController {
                         location += lawyer.getCity();
                     }
                     if (lawyer.getProvince() != null && !lawyer.getProvince().trim().isEmpty()) {
-                        if (!location.isEmpty()) location += ", ";
+                        if (!location.isEmpty())
+                            location += ", ";
                         location += lawyer.getProvince();
                     }
                     return location;
@@ -485,10 +571,10 @@ public class UserController {
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(locations);
     }
-    
+
     @GetMapping("/all")
     @Operation(summary = "Get all lawyers", description = "Returns all lawyers in the system")
     public ResponseEntity<List<LawyerEntity>> getAllLawyers() {
@@ -497,42 +583,43 @@ public class UserController {
                 .map(user -> (LawyerEntity) user)
                 .filter(lawyer -> lawyer.getCredentialsVerified() == true)
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(lawyers);
     }
 
     @GetMapping("/statistics")
     public ResponseEntity<?> getUserStatistics() {
         Map<String, Object> statistics = new HashMap<>();
-        
+
         // Get total users count
         long totalUsers = userRepo.count();
-        
+
         // Get verified/unverified users instead of active/inactive
         List<UserEntity> allUsers = userRepo.findAll();
         long activeUsers = allUsers.stream().filter(UserEntity::isVerified).count();
         long inactiveUsers = totalUsers - activeUsers;
-        
+
         // Get verified lawyers count
         long verifiedLawyers = lawyerRepo.countByCredentialsVerifiedTrue();
-        
+
         // Get pending verifications
         long pendingVerifications = lawyerRepo.countByCredentialsVerifiedFalse();
-        
-        // Calculate percentage changes (you might want to store previous values in a database)
+
+        // Calculate percentage changes (you might want to store previous values in a
+        // database)
         Map<String, String> percentageChanges = new HashMap<>();
-        percentageChanges.put("totalUsers", "+0%");  // Replace with actual calculation
+        percentageChanges.put("totalUsers", "+0%"); // Replace with actual calculation
         percentageChanges.put("activeUsers", "+0%");
         percentageChanges.put("inactiveUsers", "+0%");
         percentageChanges.put("verifiedLawyers", "+0%");
-        
+
         statistics.put("totalUsers", totalUsers);
         statistics.put("activeUsers", activeUsers);
         statistics.put("inactiveUsers", inactiveUsers);
         statistics.put("verifiedLawyers", verifiedLawyers);
         statistics.put("pendingVerifications", pendingVerifications);
         statistics.put("percentageChanges", percentageChanges);
-        
+
         return ResponseEntity.ok(statistics);
     }
 
@@ -541,42 +628,42 @@ public class UserController {
     public ResponseEntity<Map<String, Object>> changePassword(
             @RequestHeader("Authorization") String authHeader,
             @RequestBody Map<String, Object> request) {
-        
+
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             // Extract token from Authorization header
             String token = authHeader.replace("Bearer ", "");
-            
+
             // Extract user ID from token
             int userId = Integer.parseInt(jwtUtil.extractUserId(token));
-            
+
             // Get request parameters
             String currentPassword = (String) request.get("currentPassword");
             String newPassword = (String) request.get("newPassword");
-            
+
             // Validate input
             if (currentPassword == null || currentPassword.trim().isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Current password is required");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             if (newPassword == null || newPassword.trim().isEmpty()) {
                 response.put("success", false);
                 response.put("message", "New password is required");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             if (newPassword.length() < 8) {
                 response.put("success", false);
                 response.put("message", "New password must be at least 8 characters long");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
             // Call service method
             boolean success = userService.changePassword(userId, currentPassword, newPassword);
-            
+
             if (success) {
                 response.put("success", true);
                 response.put("message", "Password changed successfully");
@@ -586,7 +673,7 @@ public class UserController {
                 response.put("message", "Current password is incorrect");
                 return ResponseEntity.badRequest().body(response);
             }
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Failed to change password: " + e.getMessage());
