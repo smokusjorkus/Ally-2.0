@@ -9,6 +9,8 @@ import LawyerRegistrationForm from './components/LawyerRegistrationForm'
 import VerifyClient from './components/VerifyClient'
 import VerifyLawyer from './components/VerifyLawyer'
 import Login from './components/Login'
+import ForgotPassword from './components/ForgotPassword'
+import ResetPassword from './components/ResetPassword'
 import Admin from './pages/Admin'
 import DashboardOverview from './components/DashboardOverview'
 import LawyerVerification from './components/LawyerVerification'
@@ -82,6 +84,8 @@ function AppContent() {
           <Route path="/signup/verifyClient" element={<VerifyClient/>} />
           <Route path="/signup/verifyLawyer" element={<VerifyLawyer/>} />
           <Route path="/login" element={<Login />} />          
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route element={<LayoutRoutes />}>
             <Route path="/lawyers" element={<ProtectedRoute><LawyerDirectoryPage /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><ChatContainer /></ProtectedRoute>} />

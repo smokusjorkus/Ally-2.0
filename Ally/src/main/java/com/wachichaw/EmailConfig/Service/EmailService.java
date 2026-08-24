@@ -36,10 +36,6 @@ public class EmailService {
             throw new IllegalStateException("MAILERSEND_API_KEY is not configured");
         }
 
-        // 🚨 DEBUG CODE ADDED HERE 🚨
-        System.out.println("DEBUG: Loaded API Token (First 8 characters): " + (apiToken != null ? apiToken.substring(0, Math.min(apiToken.length(), 8)) + "..." : "NULL/Empty"));
-        // 🚨 REMOVE THIS LINE AFTER TESTING! 🚨
-
         // --- FIX IS HERE ---
         // 1. Initialize MailerSend client *without* arguments.
         MailerSend mailersend = new MailerSend(); 
@@ -86,6 +82,17 @@ public class EmailService {
                 "<p>Ally Team</p>" +
                 "</body>" +
                 "</html>";
+        sendEmail(to, subject, body);
+    }
+
+    public void sendPasswordResetEmail(String to, String resetLink) {
+        String subject = "Reset your ALLY password";
+        String body = "<html><body>"
+                + "<h3>Password reset request</h3>"
+                + "<p>Click the link below to set a new password. This link expires in 15 minutes and can only be used once.</p>"
+                + "<p><a href=\"" + resetLink + "\">Reset password</a></p>"
+                + "<p>If you did not request a password reset, you can safely ignore this email.</p>"
+                + "</body></html>";
         sendEmail(to, subject, body);
     }
 }

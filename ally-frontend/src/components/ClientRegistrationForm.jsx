@@ -179,7 +179,8 @@ export default function ClientRegistrationForm() {
         }
         console.log("Submitting form with:", body);
         
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/Client`, {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+        const response = await fetch(`${apiBaseUrl}/users/Client`, {
           method: "POST",
           body: body
         });

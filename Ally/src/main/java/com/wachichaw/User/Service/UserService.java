@@ -1,5 +1,12 @@
 package com.wachichaw.User.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,10 +31,13 @@ import com.wachichaw.Client.Entity.TempClient;
 import com.wachichaw.Config.JwtUtil;
 import com.wachichaw.EmailConfig.Controller.VerificationController;
 import com.wachichaw.EmailConfig.Service.VerificationService;
+import com.wachichaw.EmailConfig.Service.EmailService;
 import com.wachichaw.Lawyer.Entity.LawyerEntity;
 import com.wachichaw.Lawyer.Entity.TempLawyer;
 import com.wachichaw.User.Entity.AccountType;
 import com.wachichaw.User.Entity.UserEntity;
+import com.wachichaw.User.Entity.PasswordResetToken;
+import com.wachichaw.User.Repo.PasswordResetTokenRepo;
 import com.wachichaw.User.Repo.UserRepo;
 
 @Service
@@ -48,12 +59,21 @@ public class UserService {
     private VerificationService verificationService;
     @Autowired
     private SystemSettingsService systemSettingsService;
+    @Autowired
+    private PasswordResetTokenRepo passwordResetTokenRepo;
+    @Autowired
+    private EmailService emailService;
 
     @Value("${MAILERSEND_API_KEY:}")
     private String mailerSendApiKey;
 
     @Value("${LOCAL_DEV:${app.local-dev:false}}")
     private boolean localDev;
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
+    private final SecureRandom secureRandom = new SecureRandom();
     
      
 
@@ -120,7 +140,10 @@ public class UserService {
         client.setZip(zip);
         client.setProfilePhotoUrl(profilePhoto);
         client.setAccountType(AccountType.CLIENT);
-            if (!shouldSendVerificationEmail() || (localDev && !canSendVerificationEmail())) {
+            // Local development must not depend on an external email provider.
+            // The example environment contains a placeholder API key, so checking
+            // only whether the key is non-empty still attempts a real API call.
+            if (localDev || !shouldSendVerificationEmail()) {
                 client.setVerified(true);
                 client.setPassword(passwordEncoder.encode(pass));
                 return userRepo.save(client);
@@ -357,6 +380,63 @@ public class UserService {
         } catch (Exception e) {
             System.err.println("Error changing password for user " + userId + ": " + e.getMessage());
             throw new RuntimeException("Failed to change password: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void requestPasswordReset(String email) {
+        if (email == null || email.isBlank()) {
+            return;
+        }
+
+        Optional<UserEntity> user = userRepo.findByEmail(email.trim());
+        if (user.isEmpty()) {
+            return;
+        }
+
+        passwordResetTokenRepo.deleteByUser(user.get());
+        String rawToken = generateResetToken();
+        PasswordResetToken resetToken = new PasswordResetToken();
+        resetToken.setUser(user.get());
+        resetToken.setTokenHash(hashToken(rawToken));
+        resetToken.setExpiresAt(LocalDateTime.now().plusMinutes(15));
+        passwordResetTokenRepo.save(resetToken);
+
+        String resetLink = frontendUrl + "/reset-password?token=" + rawToken;
+        emailService.sendPasswordResetEmail(user.get().getEmail(), resetLink);
+    }
+
+    @Transactional
+    public void resetPassword(String rawToken, String newPassword) {
+        if (rawToken == null || rawToken.isBlank() || newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("The reset link or new password is invalid");
+        }
+
+        PasswordResetToken resetToken = passwordResetTokenRepo
+                .findByTokenHashAndUsedAtIsNullAndExpiresAtAfter(hashToken(rawToken), LocalDateTime.now())
+                .orElseThrow(() -> new IllegalArgumentException("This password reset link is invalid or has expired"));
+
+        UserEntity user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepo.save(user);
+
+        resetToken.setUsedAt(LocalDateTime.now());
+        passwordResetTokenRepo.save(resetToken);
+    }
+
+    private String generateResetToken() {
+        byte[] bytes = new byte[32];
+        secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private String hashToken(String rawToken) {
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256")
+                    .digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
         }
     }
 
