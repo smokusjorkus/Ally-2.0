@@ -57,8 +57,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                     logger.error("Invalid JWT token: {}", e.getMessage());
                 }
             }
-                        System.out.println(jwt); 
-
             // Authenticate user if token is valid
             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 try {

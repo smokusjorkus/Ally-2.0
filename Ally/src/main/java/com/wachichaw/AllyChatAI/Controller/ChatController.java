@@ -114,8 +114,13 @@ public class ChatController {
             System.out.println("🔍 RAG enabled - calling Python service...");
             
             RagSearchResponse ragResults = ragService.searchRelevantCases(request.getMessage(), 3);
+
+            String ragRejectionStage = ragResults != null ? ragResults.getRejectionStage() : null;
+            boolean canAnswerWithoutRag = "no_results".equals(ragRejectionStage)
+                || "low_relevance".equals(ragRejectionStage)
+                || "system_error".equals(ragRejectionStage);
             
-            if (ragResults != null && ragResults.getRejected() != null && ragResults.getRejected()) {
+            if (ragResults != null && Boolean.TRUE.equals(ragResults.getRejected()) && !canAnswerWithoutRag) {
                 System.out.println("❌ REJECTED by RAG (" + ragResults.getRejectionStage() + ")");
                 System.out.println("   Reason: " + ragResults.getRejectionReason());
                 System.out.println("=".repeat(60) + "\n");
@@ -165,6 +170,13 @@ public class ChatController {
             
             System.out.println("✅ PASSED RAG validation");
             
+            if (canAnswerWithoutRag) {
+                System.out.println("No usable RAG context; continuing with a direct DeepSeek answer.");
+                chatResponse.setRelevantCases(null);
+                chatResponse.setCaseCount(0);
+                chatResponse.setConfidence("No highly relevant cases");
+            }
+
             if (ragResults != null && ragResults.getCases() != null && !ragResults.getCases().isEmpty()) {
                 
                 // Filter by threshold AND deduplicate by case number

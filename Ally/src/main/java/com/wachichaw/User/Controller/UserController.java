@@ -681,4 +681,35 @@ public class UserController {
         }
     }
 
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Request a password reset link")
+    public ResponseEntity<Map<String, Object>> forgotPassword(@RequestBody Map<String, String> request) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            userService.requestPasswordReset(request.get("email"));
+        } catch (Exception exception) {
+            // Do not reveal whether an address is registered or whether mail delivery failed.
+            System.err.println("Password reset email could not be sent: " + exception.getMessage());
+        }
+        response.put("success", true);
+        response.put("message", "If an account exists for this email, a reset link has been sent.");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset a password using a one-time email link")
+    public ResponseEntity<Map<String, Object>> resetPassword(@RequestBody Map<String, String> request) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            userService.resetPassword(request.get("token"), request.get("newPassword"));
+            response.put("success", true);
+            response.put("message", "Your password has been reset. You can now log in.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException exception) {
+            response.put("success", false);
+            response.put("message", exception.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
 }
