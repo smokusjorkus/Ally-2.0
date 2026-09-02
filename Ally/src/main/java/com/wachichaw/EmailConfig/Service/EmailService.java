@@ -3,6 +3,7 @@ package com.wachichaw.EmailConfig.Service;
 import com.mailersend.sdk.MailerSend;
 import com.mailersend.sdk.emails.Email;
 import com.mailersend.sdk.exceptions.MailerSendException;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -16,6 +17,8 @@ public class EmailService {
     // The key in Render MUST be set to MAILERSEND_API_KEY
     @Value("${MAILERSEND_API_KEY:}") 
     private String apiToken;
+
+
 
     @Value("${mailersend.from-email:ally@test-2p0347zv7d3lzdrn.mlsender.net}")
     private String fromEmail;
@@ -95,4 +98,18 @@ public class EmailService {
                 + "</body></html>";
         sendEmail(to, subject, body);
     }
+
+    @PostConstruct
+    public void checkApiKey() {
+        String key = System.getenv("MAILERSEND_API_KEY");
+
+        if (key == null || key.isBlank()) {
+            System.out.println("❌ MAILERSEND_API_KEY NOT FOUND");
+        } else {
+            System.out.println("✅ MAILERSEND_API_KEY FOUND");
+            System.out.println("Key length: " + key.length());
+        }
+    }
+
+
 }

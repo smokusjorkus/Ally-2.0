@@ -23,37 +23,47 @@ const VerifyClient = () => {
   const maskedEmail = email ? email.replace(/(.{2})(.*)(@.*)/, '$1***$3') : '';
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+  e.preventDefault();
+  setIsLoading(true);
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/verifyClient?token=${verificationCode}`, {
+  try {
+    console.log("API URL:", import.meta.env.VITE_API_BASE_URL);
+    console.log("Verification URL:",
+      `${import.meta.env.VITE_API_BASE_URL}/verifyClient?token=${verificationCode}`
+    );
+
+    const response = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/verifyClient?token=${verificationCode}`,
+      {
         method: "POST"
-      });
-
-      setIsLoading(false);
-
-      if (response.ok) {
-        toast.success("Registration successful! Please login.", {
-          duration: 3000,
-        });
-        setTimeout(() => {
-          navigate('/login');
-        }, 1500);
-      } else {
-        toast.error("Invalid verification code. Please try again.", {
-          duration: 3000,
-        });
-        setVerificationCode('');
       }
-    } catch (error) {
-      setIsLoading(false);
-      toast.error("Verification failed. Please try again.", {
+    );
+
+    setIsLoading(false);
+
+    if (response.ok) {
+      toast.success("Registration successful! Please login.", {
         duration: 3000,
       });
-      console.error("Verification error:", error);
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+    } else {
+      toast.error("Invalid verification code. Please try again.", {
+        duration: 3000,
+      });
+      setVerificationCode('');
     }
-  };
+
+  } catch (error) {
+    setIsLoading(false);
+    toast.error("Verification failed. Please try again.", {
+      duration: 3000,
+    });
+    console.error("Verification error:", error);
+  }
+};
 
   const handleResendCode = async (e) => {
     e.preventDefault();

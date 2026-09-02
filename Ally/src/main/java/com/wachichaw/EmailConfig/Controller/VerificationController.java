@@ -49,7 +49,7 @@ public class VerificationController {
 
     @PostMapping("/resendCodeClient")
     public ResponseEntity<String> resendCodeClient(@RequestParam String email) {
-        int token = tempClientStorageService.getTokenByEmail(email);
+        String token = tempClientStorageService.getTokenByEmail(email);
         ClientEntity client = tempClientStorageService.getUnverifiedUser(token);
         userService.createClient(
         client.getEmail(),
@@ -68,7 +68,7 @@ public class VerificationController {
     }
     @PostMapping("/resendCodeLawyer")
     public ResponseEntity<String> resendCodeLawyer(@RequestParam String email) {
-        int token = tempLawyerStorageService.getTokenByEmail(email);
+        String token = tempLawyerStorageService.getTokenByEmail(email);
          LawyerEntity lawyer = tempLawyerStorageService.getUnverifiedUser(token); 
         userService.createLawyer(
         lawyer.getEmail(),
@@ -92,28 +92,40 @@ public class VerificationController {
     }
 
     @PostMapping("/verifyClient")
-    public ResponseEntity<?> verifyAccountClient(@RequestParam int token) throws AccessDeniedException {
+    public ResponseEntity<?> verifyAccountClient(@RequestParam String token) throws AccessDeniedException {
+
         System.out.println("Received token: " + token);
+
         ClientEntity client = tempClientStorageService.getUnverifiedUser(token);
+
+        if (client == null) {
+            System.out.println("No user found for token: " + token);
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Invalid verification code"));
+        }
+
         userService.saveClient(
-        client.getEmail(),
-        client.getPassword(),
-        client.getFname(),
-        client.getLname(),
-        client.getPhoneNumber(),
-        client.getAddress(),
-        client.getCity(),
-        client.getProvince(),
-        client.getZip(),
-        client.getProfilePhotoUrl()
+                client.getEmail(),
+                client.getPassword(),
+                client.getFname(),
+                client.getLname(),
+                client.getPhoneNumber(),
+                client.getAddress(),
+                client.getCity(),
+                client.getProvince(),
+                client.getZip(),
+                client.getProfilePhotoUrl()
         );
-        userService.verifyClient(client.getEmail()); 
+
+        userService.verifyClient(client.getEmail());
+
         tempClientStorageService.removeUnverifiedUser(token);
-        return ResponseEntity.ok().body(Map.of("success", true));
-            
+
+        return ResponseEntity.ok()
+                .body(Map.of("success", true));
     }
     @PostMapping("/verifyLawyer")
-    public ResponseEntity<?> verifyAccountLawyer(@RequestParam int token) throws AccessDeniedException {
+    public ResponseEntity<?> verifyAccountLawyer(@RequestParam String token) throws AccessDeniedException {
         System.out.println("Received token: " + token);
         LawyerEntity lawyer = tempLawyerStorageService.getUnverifiedUser(token);
         

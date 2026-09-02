@@ -14,7 +14,7 @@ public class VerificationService {
 }
 
     
-    public void sendVerificationEmail(String to, String userName, int token) {
+    public void sendVerificationEmail(String to, String userName, String token) {
 
         System.out.print(to + token + userName);
         String verificationPin = generateVerificationPin(); 

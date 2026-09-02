@@ -8,3 +8,5 @@ __pycache__
 vector-db/
 *.sqlite
 *.db
+.venv/
+
