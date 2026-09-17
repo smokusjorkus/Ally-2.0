@@ -13,15 +13,15 @@ public class EmailService {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(EmailService.class);
     private final int readTimeoutMs;
 
-    @Value("${MAILERSEND_API_KEY:}")
+    @Value("${BREVO_API_KEY:}")
     private String apiToken;
-    @Value("${mailersend.from-email:}")
+    @Value("${brevo.from-email:}")
     private String fromEmail;
-    @Value("${mailersend.from-name:Ally Team}")
+    @Value("${brevo.from-name:Ally Team}")
     private String fromName;
     private final RestTemplate mailClient;
 
-    public EmailService(@Value("${mailersend.timeout-ms:15000}") int timeout) {
+    public EmailService(@Value("${brevo.timeout-ms:15000}") int timeout) {
         var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5000);
         readTimeoutMs = Math.max(1, timeout);
@@ -40,16 +40,16 @@ public class EmailService {
             throw new EmailDeliveryException("Email delivery is not configured on the server.");
         }
         var headers = new HttpHeaders();
-        headers.setBearerAuth(apiToken);
+        headers.set("api-key", apiToken);
         headers.setContentType(MediaType.APPLICATION_JSON);
         var payload = Map.of(
-            "from", Map.of("email", fromEmail, "name", fromName),
+            "sender", Map.of("email", fromEmail, "name", fromName),
             "to", List.of(Map.of("email", to)),
-            "subject", subject, "html", body);
+            "subject", subject, "htmlContent", body);
         try {
-            var response = mailClient.postForEntity("https://api.mailersend.com/v1/email",
+            var response = mailClient.postForEntity("https://api.brevo.com/v3/smtp/email",
                 new HttpEntity<>(payload, headers), String.class);
-            if (response.getStatusCode().value() != 202) {
+            if (response.getStatusCode().value() != 201) {
                 logFailure(new EmailDeliveryException("unexpected status"), response.getStatusCode().value(),
                     safeProviderMessage(response.getBody()), started);
                 throw new EmailDeliveryException("The email provider did not accept the message.");
@@ -78,7 +78,7 @@ public class EmailService {
             cause = cause.getCause();
         }
         // Never pass a Throwable or arbitrary provider text to the logger: both can contain the request.
-        log.warn("MAILERSEND_DELIVERY_FAILED exception={} cause={} httpStatus={} providerMessage={} "
+        log.warn("BREVO_DELIVERY_FAILED exception={} cause={} httpStatus={} providerMessage={} "
                 + "apiKeyConfigured={} senderConfigured={} timeout={} connectionFailure={} "
                 + "connectTimeoutMs=5000 readTimeoutMs={} elapsedMs={}",
             exception.getClass().getName(), cause.getClass().getName(), status, providerMessage,
@@ -94,7 +94,7 @@ public class EmailService {
             var root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body);
             var messages = new java.util.LinkedHashSet<String>();
             collectSafeMessages(root.path("message"), messages);
-            collectSafeMessages(root.path("errors"), messages);
+            collectSafeMessages(root.path("code"), messages);
             return messages.isEmpty() ? "Provider response withheld (unrecognized message)" : String.join("; ", messages);
         } catch (java.io.IOException exception) {
             return "Provider response withheld (non-JSON response)";
@@ -104,14 +104,12 @@ public class EmailService {
     private void collectSafeMessages(com.fasterxml.jackson.databind.JsonNode node, java.util.Set<String> messages) {
         if (node.isTextual()) {
             String message = node.asText();
-            if (java.util.Set.of("Unauthenticated.", "Unauthorized", "Forbidden", "Too Many Attempts.",
-                    "The given data was invalid.",
-                    "The from.email domain must be verified in your account to send emails. #MS42207")
+            if (java.util.Set.of("invalid_parameter", "missing_parameter", "unauthorized",
+                    "permission_denied", "not_enough_credits", "duplicate_parameter",
+                    "document_not_found", "method_not_allowed", "out_of_range")
                     .contains(message)) {
                 messages.add(message);
             }
-            var codes = java.util.regex.Pattern.compile("#MS[0-9]{5}\\b").matcher(message);
-            while (codes.find() && messages.size() < 16) messages.add(codes.group());
         } else if (node.isContainerNode()) {
             node.forEach(child -> collectSafeMessages(child, messages));
         }

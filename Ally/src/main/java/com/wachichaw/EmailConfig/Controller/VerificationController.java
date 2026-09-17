@@ -50,22 +50,20 @@ public class VerificationController {
     @PostMapping("/resendCodeClient")
     public ResponseEntity<String> resendCodeClient(@RequestParam String email) {
         String token = tempClientStorageService.getTokenByEmail(email);
-        ClientEntity client = tempClientStorageService.getUnverifiedUser(token);
-        userService.createClient(
-        client.getEmail(),
-        client.getPassword(),
-        client.getFname(),
-        client.getLname(),
-        client.getPhoneNumber(),
-        client.getAddress(),
-        client.getCity(),
-        client.getProvince(),
-        client.getZip(),
-        client.getProfilePhotoUrl()
-        );
-        tempClientStorageService.removeUnverifiedUser(token);
-        return ResponseEntity.ok("Code Resent Successfully");
+        ClientEntity client = token == null ? null : tempClientStorageService.getUnverifiedUser(token);
+        if (client == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("Your pending registration has expired. Please register again.");
+        }
+        try {
+            verificationService.sendVerificationEmail(client.getEmail(), client.getFname(), token);
+            return ResponseEntity.ok("Verification email accepted for sending.");
+        } catch (com.wachichaw.EmailConfig.Service.EmailDeliveryException exception) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body("The email provider could not accept your verification email. Please try again shortly.");
+        }
     }
+
     @PostMapping("/resendCodeLawyer")
     public ResponseEntity<String> resendCodeLawyer(@RequestParam String email) {
         String token = tempLawyerStorageService.getTokenByEmail(email);

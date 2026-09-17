@@ -29,21 +29,27 @@ class ExternalServiceTest {
     }
     @Test void providerAcceptsEmail() {
         var service = email(); var server = mailServer(service);
-        server.expect(requestTo("https://api.mailersend.com/v1/email"))
-            .andExpect(jsonPath("$.from.email").value("sender@example.com"))
-            .andRespond(withStatus(HttpStatus.ACCEPTED));
+        server.expect(requestTo("https://api.brevo.com/v3/smtp/email"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(header("api-key", "test-only"))
+            .andExpect(headerDoesNotExist("Authorization"))
+            .andExpect(jsonPath("$.htmlContent").value("Body"))
+            .andExpect(jsonPath("$.to[0].email").value("test@example.com"))
+            .andExpect(jsonPath("$.subject").value("Subject"))
+            .andExpect(jsonPath("$.sender.email").value("sender@example.com"))
+            .andRespond(withStatus(HttpStatus.CREATED));
         assertDoesNotThrow(() -> service.sendEmail("test@example.com", "Subject", "Body"));
         server.verify();
     }
     @Test void providerRejectionIsControlled() {
         var service = email(); var server = mailServer(service);
-        server.expect(requestTo("https://api.mailersend.com/v1/email")).andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+        server.expect(requestTo("https://api.brevo.com/v3/smtp/email")).andRespond(withStatus(HttpStatus.UNAUTHORIZED));
         assertThrows(EmailDeliveryException.class, () -> service.sendEmail("test@example.com", "Subject", "Body"));
         server.verify();
     }
     @Test void emailTimeoutIsControlled() {
         var service = email(); var server = mailServer(service);
-        server.expect(requestTo("https://api.mailersend.com/v1/email"))
+        server.expect(requestTo("https://api.brevo.com/v3/smtp/email"))
             .andRespond(withException(new java.net.SocketTimeoutException("timed out")));
         assertThrows(EmailDeliveryException.class, () -> service.sendEmail("test@example.com", "Subject", "Body"));
         server.verify();
