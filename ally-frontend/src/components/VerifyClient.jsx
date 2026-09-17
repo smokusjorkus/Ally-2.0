@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const VerifyClient = () => {
-  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationCode, setVerificationCode] = useState(Array(6).fill(''));
   const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -24,16 +24,17 @@ const VerifyClient = () => {
 
   const handleSubmit = async (e) => {
   e.preventDefault();
+  if (isLoading) return;
+  const token = verificationCode.join('');
+  if (!/^\d{6}$/.test(token)) {
+    toast.error("Enter the complete six-digit code from your email.");
+    return;
+  }
   setIsLoading(true);
 
   try {
-    console.log("API URL:", import.meta.env.VITE_API_BASE_URL);
-    console.log("Verification URL:",
-      `${import.meta.env.VITE_API_BASE_URL}/verifyClient?token=${verificationCode}`
-    );
-
     const response = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/verifyClient?token=${verificationCode}`,
+      `${import.meta.env.VITE_API_BASE_URL}/verifyClient?token=${token}`,
       {
         method: "POST"
       }
@@ -53,7 +54,7 @@ const VerifyClient = () => {
       toast.error("Invalid verification code. Please try again.", {
         duration: 3000,
       });
-      setVerificationCode('');
+      setVerificationCode(Array(6).fill(''));
     }
 
   } catch (error) {
@@ -67,14 +68,22 @@ const VerifyClient = () => {
 
   const handleResendCode = async (e) => {
     e.preventDefault();
+    if (isLoading || !email) return;
     setIsLoading(true);
-    setTimeout(async () => {
-      setIsLoading(false);
-      await fetch(`${import.meta.env.VITE_API_BASE_URL}/resendCodeClient?email=${email}`, {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/resendCodeClient?email=${encodeURIComponent(email)}`, {
         method: "POST"
       });
-    toast.success('Verification code resent!');
-    }, 1500);
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error([404, 503].includes(response.status) ? message : 'Could not resend the code. Please try again.');
+      }
+      toast.success('Verification email accepted for sending. Check your inbox and spam folder.');
+    } catch (error) {
+      toast.error(error.message || 'Could not resend the code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -82,7 +91,7 @@ const VerifyClient = () => {
       <div className="w-full max-w-md p-8 bg-white border border-gray-200 shadow-md rounded-2xl">
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-bold text-gray-800">Verify Your Email</h2>
-          <p className="mt-2 text-gray-600">We've sent a verification code to {maskedEmail}</p>
+          <p className="mt-2 text-gray-600">Check {maskedEmail} for your verification code, including the spam folder.</p>
         </div>
         <div>
           <div className="flex flex-col items-center mb-4">
@@ -103,9 +112,9 @@ const VerifyClient = () => {
                   onChange={(e) => {
                     const value = e.target.value;
                     if (!/^[0-9]*$/.test(value)) return;
-                    const newCode = verificationCode.split('');
+                    const newCode = [...verificationCode];
                     newCode[index] = value;
-                    setVerificationCode(newCode.join(''));
+                    setVerificationCode(newCode);
                     // Auto-focus next input
                     if (value && index < 5) {
                       inputRefs.current[index + 1].current.focus();
@@ -113,11 +122,12 @@ const VerifyClient = () => {
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Backspace') {
+                      e.preventDefault();
                       if (verificationCode[index]) {
                         // Clear current
-                        const newCode = verificationCode.split('');
+                        const newCode = [...verificationCode];
                         newCode[index] = '';
-                        setVerificationCode(newCode.join(''));
+                        setVerificationCode(newCode);
                       } else if (index > 0) {
                         // Move to previous
                         inputRefs.current[index - 1].current.focus();
@@ -127,7 +137,7 @@ const VerifyClient = () => {
                   onPaste={(e) => {
                     e.preventDefault();
                     const pastedData = e.clipboardData.getData('text').slice(0, 6).replace(/[^0-9]/g, '');
-                    setVerificationCode(pastedData);
+                    setVerificationCode(Array.from({ length: 6 }, (_, i) => pastedData[i] || ''));
                     // Focus last filled input
                     if (pastedData.length > 0) {
                       const last = Math.min(pastedData.length - 1, 5);
@@ -150,7 +160,7 @@ const VerifyClient = () => {
             <button
               onClick={handleSubmit}
               className="flex-1 bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-300"
-              disabled={isLoading}
+              disabled={isLoading || !/^\d{6}$/.test(verificationCode.join(''))}
             >
               {isLoading ? 'Verifying...' : 'Verify Email'}
             </button>
@@ -159,12 +169,14 @@ const VerifyClient = () => {
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
             Didn't receive a code?{' '}
-            <span
+            <button
+              type="button"
+              disabled={isLoading}
               onClick={handleResendCode}
               className="font-medium text-blue-600 cursor-pointer hover:text-blue-800"
             >
               Resend code
-            </span>
+            </button>
           </p>
         </div>
       </div>

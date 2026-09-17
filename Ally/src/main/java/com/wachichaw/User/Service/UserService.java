@@ -64,9 +64,9 @@
         @Autowired
         private EmailService emailService;
     
-        @Value("${MAILERSEND_API_KEY:}")
-        private String mailerSendApiKey;
-    
+        @Value("${BREVO_API_KEY:}")
+        private String brevoApiKey;
+
         @Value("${LOCAL_DEV:${app.local-dev:false}}")
         private boolean localDev;
     
@@ -87,7 +87,7 @@
         }
     
         private boolean canSendVerificationEmail() {
-            return mailerSendApiKey != null && !mailerSendApiKey.trim().isEmpty();
+            return brevoApiKey != null && !brevoApiKey.trim().isEmpty();
         }
     
         public AdminEntity createAdmin(String email, String pass, String Fname, String Lname, Long phoneNumber, String address, String city, String province, String zip) {

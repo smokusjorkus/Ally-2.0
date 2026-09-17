@@ -22,7 +22,7 @@ The current prototype includes a Spring Boot backend, a React/Vite frontend, and
 * **Case management**: Clients can submit cases, lawyers can accept or decline cases, and users can track case status.
 * **Document management**: Users can upload, view, download, and delete documents for accepted cases.
 * **Audit trail**: Admins and lawyers can review logged activity such as login events, case changes, document actions, and AI inquiries.
-* **Email verification and notifications**: MailerSend is used for account verification and email workflows.
+* **Email verification and notifications**: Brevo is used for account verification and email workflows.
 * **OAuth support**: Google OAuth login is supported when OAuth environment variables are configured.
 * **Local or Firebase-backed file storage**: Local storage is supported for development; Firebase Storage can be used when configured.
 
@@ -75,9 +75,9 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 RAG_SERVICE_URL=http://localhost:8001
 
 STORAGE_TYPE=local
-MAILERSEND_API_KEY=your_mailersend_api_key
-MAILERSEND_FROM_EMAIL=your_verified_sender
-MAILERSEND_FROM_NAME=Ally Team
+BREVO_API_KEY=your_brevo_api_key
+BREVO_FROM_EMAIL=your_verified_sender
+BREVO_FROM_NAME=Ally Team
 
 FRONTEND_URL=http://localhost:5173
 CORS_ALLOWED_ORIGIN_PATTERNS=http://localhost:5173,http://localhost:5174,https://*.vercel.app
@@ -235,7 +235,7 @@ The Spring Boot backend handles users, cases, documents, audit logs, AI chat his
 * **Vector database**: Pinecone
 * **AI model**: DeepSeek V4 Flash-compatible chat endpoint
 * **Embeddings**: [BAAI/bge-large-en-v1.5](https://huggingface.co/BAAI/bge-large-en-v1.5)
-* **Email**: MailerSend
+* **Email**: Brevo
 * **File storage**: Local development storage or Firebase Storage
 
 ---

@@ -55,33 +55,31 @@ class EmailDiagnosticsTest {
     }
     @Test void acceptedEmailDoesNotLogFailure(CapturedOutput output) {
         var service = service(); var server = server(service);
-        server.expect(requestTo("https://api.mailersend.com/v1/email")).andRespond(withStatus(HttpStatus.ACCEPTED));
+        server.expect(requestTo("https://api.brevo.com/v3/smtp/email")).andRespond(withStatus(HttpStatus.CREATED));
         assertDoesNotThrow(() -> send(service));
-        assertFalse(output.getOut().contains("MAILERSEND_DELIVERY_FAILED"));
+        assertFalse(output.getOut().contains("BREVO_DELIVERY_FAILED"));
         server.verify();
     }
     @Test void authenticationFailureIncludesStatusAndSafeMessage(CapturedOutput output) {
         var service = service(); var server = server(service);
         server.expect(anything()).andRespond(withStatus(HttpStatus.UNAUTHORIZED)
-            .body("{\"message\":\"Unauthenticated.\"}").contentType(MediaType.APPLICATION_JSON));
+            .body("{\"code\":\"unauthorized\",\"message\":\"Invalid API key\"}").contentType(MediaType.APPLICATION_JSON));
         var error = assertThrows(EmailDeliveryException.class, () -> send(service));
         assertNotNull(error.getCause());
-        assertTrue(output.getOut().contains("httpStatus=401 providerMessage=Unauthenticated."));
+        assertTrue(output.getOut().contains("httpStatus=401 providerMessage=unauthorized"));
         server.verify();
     }
     @Test void rejectionLogsCodesWithoutEchoedSensitiveData(CapturedOutput output) {
         var service = service(); var server = server(service);
         server.expect(anything()).andRespond(withStatus(HttpStatus.UNPROCESSABLE_ENTITY)
             .body("""
-                {"message":"The given data was invalid.","errors":{
-                  "from.email":["The from.email domain must be verified in your account to send emails. #MS42207"],
-                  "to":["private@example.test Private Name 123456 fake-secret-token Authorization: Bearer fake-secret-token"],
-                  "html":["<p>Private Name 123456</p>"]}}
+                {"code":"invalid_parameter",
+                 "message":"private@example.test Private Name 123456 fake-secret-token Authorization <p>"}
                 """).contentType(MediaType.APPLICATION_JSON));
         assertThrows(EmailDeliveryException.class, () -> send(service));
         String log = output.getOut();
         assertTrue(log.contains("httpStatus=422"));
-        assertTrue(log.contains("#MS42207"));
+        assertTrue(log.contains("invalid_parameter"));
         for (String secret : new String[]{"private@example.test", "Private Name", "123456", "fake-secret-token", "Authorization", "<p>"}) {
             assertFalse(log.contains(secret), secret);
         }
