@@ -98,7 +98,7 @@ def truncate_text(text: str, max_length: int = MAX_METADATA_TEXT_LENGTH) -> str:
     return text[:max_length - 3] + "..."
 
 
-def create_index_if_not_exists(pc: Pinecone, index_name: str, dimension: int = 1024):
+def create_index_if_not_exists(pc: Pinecone, index_name: str, dimension: int = 384):
     """Create Pinecone index if it doesn't exist."""
     existing_indexes = pc.list_indexes().names()
     
@@ -150,7 +150,7 @@ def prepare_vector_batch(chunks: List[Dict], model: SentenceTransformer,
             # Create unique vector ID
             chunk_id = chunk.get('chunk_id', f"chunk_{idx}")
             case_number = chunk.get('case_number', 'unknown')
-            vector_id = f"{case_number}_{chunk_id}".replace(' ', '_')
+            vector_id = f"chunk_{chunk_id}"
             
             # Prepare metadata (Pinecone size limits)
             metadata = {
@@ -235,13 +235,13 @@ Tips for Philippines → US East-1:
 
     # Load embedding model
     print("\n🤖 Loading embedding model...")
-    print("   Model: BAAI/bge-large-en-v1.5")
+    print("   Model: BAAI/bge-small-en-v1.5")
     print("   Note: First run will download ~1.3GB (cached after)")
     
     try:
-        model = SentenceTransformer('BAAI/bge-large-en-v1.5')
+        model = SentenceTransformer('BAAI/bge-small-en-v1.5')
         print("   ✅ Model loaded successfully")
-        print("   📐 Dimensions: 1024")
+        print("   📐 Dimensions: 384")
     except Exception as e:
         print(f"❌ Error loading model: {e}")
         print("\nTry: pip install sentence-transformers torch")
@@ -288,7 +288,7 @@ Tips for Philippines → US East-1:
         print(f"  python scripts/2_index_pinecone.py --create-index")
         print(f"\nOr create manually at: https://app.pinecone.io")
         print(f"  - Name: {PINECONE_INDEX_NAME}")
-        print(f"  - Dimensions: 1024")
+        print(f"  - Dimensions: 384")
         print(f"  - Metric: cosine")
         print(f"  - Region: us-east-1 (Free Tier)")
         return 1
