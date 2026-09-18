@@ -52,7 +52,7 @@ class ALLYAssistant:
     def __init__(
         self,
         index_name: str = None,
-        embedding_model: str = "BAAI/bge-large-en-v1.5",
+        embedding_model: str = "BAAI/bge-small-en-v1.5",
         use_finetuned: bool = False
     ):
         print("🚀 Initializing ALLY Legal Assistant...")

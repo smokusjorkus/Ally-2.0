@@ -51,7 +51,7 @@ def prepare_vector_batch(chunks: List[Dict], model: SentenceTransformer) -> List
             
             chunk_id = chunk.get('chunk_id', '')
             case_number = chunk.get('case_number', 'unknown')
-            vector_id = f"{case_number}_{chunk_id}".replace(' ', '_')
+            vector_id = f"chunk_{chunk_id}"
             
             metadata = {
                 'case_number': truncate_text(chunk.get('case_number', ''), 200),
@@ -153,7 +153,7 @@ def main():
     
     # Load embedding model
     print("\n🤖 Loading embedding model...")
-    model = SentenceTransformer('BAAI/bge-large-en-v1.5')
+    model = SentenceTransformer('BAAI/bge-small-en-v1.5')
     print("   ✅ Model loaded")
     
     # Connect to Pinecone
