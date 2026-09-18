@@ -15,17 +15,17 @@ The backend changes must be deployed before the browser can use them. No Render 
 
 Required for database-backed registration:
 
-| Name | Configuration |
-| --- | --- |
-| DB_URL | Reachable MySQL JDBC connection URL, with the database provider's required TLS options |
-| DB_USERNAME | Database username |
-| DB_PASSWORD | Database password (secret) |
-| MAILERSEND_API_KEY | MailerSend API token with sending permission (secret) |
-| MAILERSEND_FROM_EMAIL | Sender on your verified MailerSend domain |
-| MAILERSEND_FROM_NAME | Sender display name; defaults to Ally Team |
-| FRONTEND_URL | https://ally-frontend-eta.vercel.app |
-| LOCAL_DEV | false; also enable email verification in ALLY system settings |
-| RAG_ENABLED | false until FastAPI is publicly reachable |
+| Name                  | Configuration                                                                          |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| DB_URL                | Reachable MySQL JDBC connection URL, with the database provider's required TLS options |
+| DB_USERNAME           | Database username                                                                      |
+| DB_PASSWORD           | Database password (secret)                                                             |
+| MAILERSEND_API_KEY    | MailerSend API token with sending permission (secret)                                  |
+| MAILERSEND_FROM_EMAIL | Sender on your verified MailerSend domain                                              |
+| MAILERSEND_FROM_NAME  | Sender display name; defaults to Ally Team                                             |
+| FRONTEND_URL          | https://ally-legalservices.vercel.app                                                  |
+| LOCAL_DEV             | false; also enable email verification in ALLY system settings                          |
+| RAG_ENABLED           | false until FastAPI is publicly reachable                                              |
 
 Optional settings:
 
