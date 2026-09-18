@@ -198,7 +198,7 @@ async def startup_event():
     # Load embedding model with error handling
     try:
         print("   🤖 Loading embedding model...")
-        embedding_model = SentenceTransformer('BAAI/bge-large-en-v1.5')
+        embedding_model = SentenceTransformer('BAAI/bge-small-en-v1.5')
         print("   ✅ Embedding model loaded")
     except Exception as e:
         print(f"   ❌ Embedding model failed: {e}")
@@ -510,7 +510,7 @@ async def health_check():
         return {
             "status": "healthy",
             "vector_db": "pinecone",
-            "embedding_model": "BAAI/bge-large-en-v1.5",
+            "embedding_model": "BAAI/bge-small-en-v1.5",
             "vectors_count": stats.total_vector_count,
             "classifier": "DeepSeek V4 Flash",
             "classification_type": "LLM-based",

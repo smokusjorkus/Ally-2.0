@@ -1,130 +1,62 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 
-const inlinePatterns = /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+const isSafeExternalUrl = (href) => /^https?:\/\//i.test(href || '');
 
-const renderInline = (text) => {
-  if (!text) return null;
-
-  return text.split(inlinePatterns).filter(Boolean).map((part, index) => {
-    if (part.startsWith('***') && part.endsWith('***')) {
-      return (
-        <strong key={index}>
-          <em>{part.slice(3, -3)}</em>
-        </strong>
-      );
+const markdownComponents = {
+  p: ({ children }) => <p className="my-3 whitespace-pre-line leading-7">{children}</p>,
+  ul: ({ children }) => <ul className="my-3 list-disc space-y-2 pl-5">{children}</ul>,
+  ol: ({ children }) => <ol className="my-3 list-decimal space-y-2 pl-5">{children}</ol>,
+  li: ({ children }) => <li className="leading-7">{children}</li>,
+  h1: ({ children }) => <h1 className="mb-2 mt-4 text-xl font-semibold">{children}</h1>,
+  h2: ({ children }) => <h2 className="mb-2 mt-4 text-lg font-semibold">{children}</h2>,
+  h3: ({ children }) => <h3 className="mb-2 mt-3 text-base font-semibold">{children}</h3>,
+  a: ({ href, children }) => {
+    if (!isSafeExternalUrl(href)) {
+      return <span>{children}</span>;
     }
 
-    if ((part.startsWith('**') && part.endsWith('**')) || (part.startsWith('__') && part.endsWith('__'))) {
-      return <strong key={index}>{part.slice(2, -2)}</strong>;
-    }
-
-    if ((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) {
-      return <em key={index}>{part.slice(1, -1)}</em>;
-    }
-
-    if (part.startsWith('`') && part.endsWith('`')) {
-      return (
-        <code key={index} className="rounded bg-black/10 px-1 py-0.5 font-mono text-[0.95em]">
-          {part.slice(1, -1)}
-        </code>
-      );
-    }
-
-    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-    if (linkMatch) {
-      const [, label, href] = linkMatch;
-      const isSafeLink = /^https?:\/\//i.test(href);
-
-      return isSafeLink ? (
-        <a
-          key={index}
-          href={href}
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium underline underline-offset-2"
-        >
-          {label}
-        </a>
-      ) : (
-        <span key={index}>{label}</span>
-      );
-    }
-
-    return <React.Fragment key={index}>{part}</React.Fragment>;
-  });
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="font-medium underline underline-offset-2"
+      >
+        {children}
+      </a>
+    );
+  },
+  table: ({ children }) => (
+    <div className="my-3 overflow-x-auto">
+      <table className="min-w-full border-collapse text-left text-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-black/10">{children}</thead>,
+  th: ({ children }) => (
+    <th className="border-b-2 border-black/30 px-3 py-2 font-semibold">{children}</th>
+  ),
+  tr: ({ children }) => <tr className="even:bg-black/[0.03]">{children}</tr>,
+  td: ({ children }) => <td className="border-b border-black/20 px-3 py-2 align-top">{children}</td>,
+  code: ({ children }) => (
+    <code className="rounded bg-black/10 px-1 py-0.5 font-mono text-[0.95em]">{children}</code>
+  ),
 };
 
 const MarkdownText = ({ text, className = '' }) => {
-  const lines = String(text || '').split(/\r?\n/);
-  const blocks = [];
-  let listItems = [];
+  // Some model responses escape table delimiters as "\\|". Unescape those
+  // delimiters so remark-gfm can recognize the table structure.
+  const normalizedText = String(text || '').replace(/\\\|/g, '|');
 
-  const flushList = () => {
-    if (listItems.length === 0) return;
-    blocks.push(
-      <ul key={`list-${blocks.length}`} className="my-2 list-disc space-y-1 pl-5">
-        {listItems.map((item, index) => (
-          <li key={index}>{renderInline(item)}</li>
-        ))}
-      </ul>
-    );
-    listItems = [];
-  };
-
-  lines.forEach((line, index) => {
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      flushList();
-      blocks.push(<div key={`space-${index}`} className="h-2" />);
-      return;
-    }
-
-    const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
-    if (bulletMatch) {
-      listItems.push(bulletMatch[1]);
-      return;
-    }
-
-    flushList();
-
-    if (trimmed.startsWith('### ')) {
-      blocks.push(
-        <h3 key={index} className="mb-1 mt-2 text-base font-semibold">
-          {renderInline(trimmed.slice(4))}
-        </h3>
-      );
-      return;
-    }
-
-    if (trimmed.startsWith('## ')) {
-      blocks.push(
-        <h2 key={index} className="mb-1 mt-2 text-lg font-semibold">
-          {renderInline(trimmed.slice(3))}
-        </h2>
-      );
-      return;
-    }
-
-    if (trimmed.startsWith('# ')) {
-      blocks.push(
-        <h1 key={index} className="mb-1 mt-2 text-xl font-semibold">
-          {renderInline(trimmed.slice(2))}
-        </h1>
-      );
-      return;
-    }
-
-    blocks.push(
-      <p key={index} className="my-1">
-        {renderInline(line)}
-      </p>
-    );
-  });
-
-  flushList();
-
-  return <div className={className}>{blocks}</div>;
+  return (
+    <div className={className}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={markdownComponents}>
+        {normalizedText}
+      </ReactMarkdown>
+    </div>
+  );
 };
 
 export default MarkdownText;
