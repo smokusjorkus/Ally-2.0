@@ -1,0 +1,10 @@
+.env
+.venv
+venv
+__pycache__
+.git
+ally-dataset
+processed-for-rag
+localrun-scripts
+service-account-key.json
+*.pyc
