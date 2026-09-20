@@ -3,6 +3,8 @@ package com.wachichaw.AllyRAG;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
@@ -83,9 +85,8 @@ public class RagService {
      */
     public RagSearchResponse searchRelevantCases(String query, int topK) {
         if (!enabled) throw new IllegalStateException("Case retrieval is disabled.");
+        String url = ragServiceUrl + "/search";
         try {
-            String url = ragServiceUrl + "/search";
-
             Map<String, Object> request = new HashMap<>();
             request.put("query", query);
             request.put("top_k", Math.min(3, Math.max(1, topK)));
@@ -104,9 +105,29 @@ public class RagService {
 
             throw new IllegalStateException("Case retrieval unavailable.");
 
+        } catch (HttpStatusCodeException e) {
+            String responseBody = e.getResponseBodyAsString();
+            if (responseBody != null && responseBody.length() > 1000) {
+                responseBody = responseBody.substring(0, 1000) + "...";
+            }
+            System.err.println("RAG HTTP error: URL=" + url
+                + ", status=" + e.getStatusCode()
+                + ", response=" + responseBody);
+            e.printStackTrace(System.err);
+            throw new IllegalStateException("Case retrieval unavailable.", e);
+
+        } catch (ResourceAccessException e) {
+            System.err.println("RAG connection/timeout error: URL=" + url
+                + ", message=" + e.getMessage());
+            e.printStackTrace(System.err);
+            throw new IllegalStateException("Case retrieval unavailable.", e);
+
         } catch (Exception e) {
-            System.err.println("RAG retrieval unavailable");
-            throw new IllegalStateException("Case retrieval unavailable.");
+            System.err.println("RAG unexpected error: URL=" + url
+                + ", type=" + e.getClass().getName()
+                + ", message=" + e.getMessage());
+            e.printStackTrace(System.err);
+            throw new IllegalStateException("Case retrieval unavailable.", e);
         }
     }
 
