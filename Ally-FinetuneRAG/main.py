@@ -4,7 +4,8 @@ Run with: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 Render RAG env vars:
 PINECONE_API_KEY=<your-pinecone-api-key>
-PINECONE_INDEX_NAME=ally-supreme-court-cases
+PINECONE_INDEX_NAME=ally-supreme-court-cases-small-v3
+EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 DEEPSEEK_API_KEY=<your-deepseek-api-key>
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_MODEL=deepseek-v4-flash
@@ -13,7 +14,7 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
@@ -21,8 +22,10 @@ import os
 from dotenv import load_dotenv
 import re
 import requests
+from pathlib import Path
+from urllib.parse import urlsplit
 
-load_dotenv()
+load_dotenv(Path(__file__).with_name(".env"))
 
 app = FastAPI(
     title="ALLY Legal Assistant API",
@@ -49,7 +52,7 @@ app.add_middleware(
 # ==========================================
 class SearchRequest(BaseModel):
     query: str
-    top_k: int = 3
+    top_k: int = Field(default=3, ge=1)
 
 class ValidationRequest(BaseModel):
     query: str
@@ -192,34 +195,26 @@ async def startup_event():
     """Initialize models on startup"""
     global embedding_model, pinecone_index, deepseek_api_key, deepseek_base_url, deepseek_model
     
-    print("🚀 Starting ALLY System (DeepSeek Classification)...")
-    print(f"   📍 Environment: {'Render' if os.getenv('RENDER') else 'Local'}")
-    
-    # Load embedding model with error handling
+    embedding_model = None
+    pinecone_index = None
+    index_name = os.getenv("PINECONE_INDEX_NAME", "").strip()
+    model_name = os.getenv("EMBEDDING_MODEL", "").strip()
+    if not index_name or not os.getenv("PINECONE_API_KEY"):
+        raise RuntimeError("RAG configuration requires PINECONE_INDEX_NAME and PINECONE_API_KEY.")
+    if model_name != "BAAI/bge-small-en-v1.5":
+        raise RuntimeError("EMBEDDING_MODEL must be BAAI/bge-small-en-v1.5 for the 384-dimensional index.")
     try:
-        print("   🤖 Loading embedding model...")
-        embedding_model = SentenceTransformer('BAAI/bge-small-en-v1.5')
-        print("   ✅ Embedding model loaded")
-    except Exception as e:
-        print(f"   ❌ Embedding model failed: {e}")
-        print("   ⚠️  Continuing without embeddings (search will fail)")
-        embedding_model = None
-    
-    # Initialize Pinecone
-    print("   🔌 Connecting to Pinecone...")
-    api_key = os.getenv('PINECONE_API_KEY')
-    index_name = os.getenv('PINECONE_INDEX_NAME', 'ally-supreme-court-cases')
-    
-    if not api_key:
-        print("   ⚠️  PINECONE_API_KEY not found")
-    else:
-        try:
-            pc = Pinecone(api_key=api_key)
-            pinecone_index = pc.Index(index_name)
-            print(f"   ✅ Connected to Pinecone: {index_name}")
-        except Exception as e:
-            print(f"   ❌ Pinecone failed: {e}")
-            pinecone_index = None
+        model = SentenceTransformer(model_name)
+        if model.get_sentence_embedding_dimension() != 384:
+            raise ValueError("embedding dimension")
+        pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+        description = pc.describe_index(index_name)
+        if description.dimension != 384 or description.metric != "cosine":
+            raise ValueError("index dimension or metric")
+        index = pc.Index(index_name)
+    except Exception:
+        raise RuntimeError("RAG startup failed. Check the configured index exists, its dimension is 384 and metric is cosine, credentials, connectivity, and embedding model availability.") from None
+    embedding_model, pinecone_index = model, index
 
     # Initialize DeepSeek for classification.
     print("   Configuring DeepSeek classifier...")
@@ -232,7 +227,7 @@ async def startup_event():
     else:
         print("   DEEPSEEK_API_KEY not found; classifier will fail open")
     
-    print("✅ ALLY Ready with DeepSeek Classification!\n")
+    print("ALLY ready.")
     
 # ==========================================
 # VALIDATION ENDPOINT
@@ -374,122 +369,84 @@ async def validate_question(request: ValidationRequest):
 # ==========================================
 # SEARCH ENDPOINT
 # ==========================================
-@app.post("/search")
-async def search_cases(request: SearchRequest):
-    """Search cases with DeepSeek classification"""
+VALIDATION_WARNING = "ALLY found potentially relevant case records, but the final Supreme Court disposition could not be verified from the currently indexed metadata. The retrieved text may include rulings from lower courts. Please review the official Supreme Court or E-Library decision before relying on the legal outcome."
+
+
+def clean(value):
+    return value.strip() if isinstance(value, str) else ""
+
+
+def section_name(value):
+    return re.sub(r"[\s-]+", "_", clean(value).lower())
+
+
+def legally_verified(metadata):
     try:
-        if not pinecone_index:
-            return {
-                "cases": [],
-                "count": 0,
-                "query": request.query,
-                "rejected": True,
-                "rejection_stage": "system_error",
-                "rejection_reason": "Pinecone not initialized"
-            }
-        
-        query = request.query
-        
-        # DeepSeek validation
-        is_valid, category, reason, confidence = classify_with_deepseek(query)
-        
-        if not is_valid:
-            print(f"   ❌ DeepSeek rejected: {category}")
-            return {
-                "cases": [],
-                "count": 0,
-                "query": query,
-                "rejected": True,
-                "rejection_stage": "deepseek_filter",
-                "rejection_reason": reason,
-                "confidence": confidence
-            }
-        
-        print(f"   ✅ DeepSeek passed: {category}")
-        
-        # If greeting/meta, return empty (Spring Boot handles)
-        if category in ['GREETING', 'META']:
-            return {
-                "cases": [],
-                "count": 0,
-                "query": query,
-                "rejected": False,
-                "confidence": confidence
-            }
-        
-        # Vector search for legal questions
-        query_embedding = embedding_model.encode(
-            query,
-            normalize_embeddings=True
-        ).tolist()
-        
-        results = pinecone_index.query(
-            vector=query_embedding,
-            top_k=request.top_k,
-            include_metadata=True
-        )
-        
-        if not results['matches']:
-            return {
-                "cases": [],
-                "count": 0,
-                "query": query,
-                "rejected": True,
-                "rejection_stage": "no_results",
-                "rejection_reason": "No cases found"
-            }
-        
-        # Relevance check
-        RELEVANCE_THRESHOLD = 0.54
-        relevant_matches = [
-            m for m in results['matches']
-            if m['score'] >= RELEVANCE_THRESHOLD
-        ]
-        
-        if not relevant_matches:
-            best_score = max(m['score'] for m in results['matches'])
-            return {
-                "cases": [],
-                "count": 0,
-                "query": query,
-                "rejected": True,
-                "rejection_stage": "low_relevance",
-                "rejection_reason": f"Best score {best_score:.1%} below threshold",
-                "confidence": best_score
-            }
-        
-        # Format cases
+        source = urlsplit(clean(metadata.get("source_url")))
+        official = (source.scheme == "https" and source.hostname in
+                    {"elibrary.judiciary.gov.ph", "sc.judiciary.gov.ph"}
+                    and not source.username and not source.password
+                    and source.port in (None, 443))
+    except ValueError:
+        official = False
+    court = section_name(metadata.get("court_level"))
+    disposition = clean(metadata.get("disposition"))
+    return bool(official and court in {"supreme_court", "supreme_court_of_the_philippines"}
+                and disposition.lower() not in {"", "unknown", "n/a", "null", "none", "ambiguous"}
+                and "final_disposition" in {section_name(metadata.get("section")),
+                                             section_name(metadata.get("chunk_type"))})
+
+
+def retrieval_response(query, cases, confidence=0.0, **extra):
+    verified = bool(cases) and all(c["can_state_final_outcome"] for c in cases)
+    return dict(cases=cases, count=len(cases), query=query, rejected=False,
+                confidence=confidence,
+                legal_validation_status="verified" if verified else "unverified",
+                can_state_final_outcome=verified,
+                validation_warning=None if verified else VALIDATION_WARNING,
+                **extra)
+
+
+@app.post("/search")
+def search_cases(request: SearchRequest):
+    if pinecone_index is None or embedding_model is None:
+        raise HTTPException(503, "Case retrieval unavailable: RAG is not initialized.")
+    is_valid, category, reason, confidence = classify_with_deepseek(request.query)
+    if not is_valid:
+        response = retrieval_response(request.query, [], confidence)
+        response.update(rejected=True, rejection_stage="deepseek_filter", rejection_reason=reason)
+        return response
+    try:
+        vector = embedding_model.encode(request.query, normalize_embeddings=True).tolist()
+        if len(vector) != 384:
+            raise HTTPException(503, "Case retrieval unavailable: query dimension must be 384.")
+        options = dict(vector=vector, top_k=min(request.top_k, 3), include_metadata=True)
+        namespace = os.getenv("PINECONE_NAMESPACE")
+        if namespace:
+            options["namespace"] = namespace
+        results = pinecone_index.query(**options)
+        matches = [m for m in results.get("matches", []) if m["score"] >= 0.54][:min(request.top_k, 3)]
         cases = []
-        for match in relevant_matches:
-            metadata = match['metadata']
-            case_title = metadata.get("case_title") or metadata.get("case_number") or "Unknown Case"
-            cases.append({
-                "title": case_title,
-                "score": round(match['score'] * 100, 1),
-                "content": metadata.get("text", ""),
-                "citation": metadata.get("case_number", ""),
-                "section": metadata.get("chunk_type", ""),
-                "source_url": metadata.get("source_url", "")
-            })
-        
-        return {
-            "cases": cases,
-            "count": len(cases),
-            "query": query,
-            "rejected": False,
-            "confidence": max(m['score'] for m in relevant_matches)
-        }
-        
-    except Exception as e:
-        print(f"   ❌ Error: {str(e)}")
-        return {
-            "cases": [],
-            "count": 0,
-            "query": request.query,
-            "rejected": True,
-            "rejection_stage": "system_error",
-            "rejection_reason": f"Error: {str(e)}"
-        }
+        for match in matches:
+            metadata = match.get("metadata") or {}
+            verified = legally_verified(metadata)
+            cases.append(dict(
+                title=clean(metadata.get("case_title")),
+                case_number=clean(metadata.get("case_number")),
+                decision_date=clean(metadata.get("decision_date")),
+                score=round(match["score"] * 100, 1),
+                content=clean(metadata.get("text")),
+                citation=clean(metadata.get("case_number")),
+                section=section_name(metadata.get("section")) or section_name(metadata.get("chunk_type")),
+                source_url=clean(metadata.get("source_url")),
+                legal_validation_status="verified" if verified else "unverified",
+                can_state_final_outcome=verified,
+                validation_warning=None if verified else VALIDATION_WARNING))
+        return retrieval_response(request.query, cases, max((m["score"] for m in matches), default=0.0))
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(503, "Case retrieval unavailable. Please try again later.") from None
 
 
 # ==========================================
@@ -510,7 +467,7 @@ async def health_check():
         return {
             "status": "healthy",
             "vector_db": "pinecone",
-            "embedding_model": "BAAI/bge-small-en-v1.5",
+            "embedding_model": os.getenv("EMBEDDING_MODEL"),
             "vectors_count": stats.total_vector_count,
             "classifier": "DeepSeek V4 Flash",
             "classification_type": "LLM-based",
@@ -519,7 +476,7 @@ async def health_check():
     except Exception as e:
         return {
             "status": "unhealthy",
-            "error": str(e)
+            "error": "RAG health check failed"
         }
 
 

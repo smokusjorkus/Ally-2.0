@@ -63,6 +63,9 @@ const parseResponseData = (data) => {
   // New ChatResponse format (your backend's format)
   if (data && typeof data === 'object' && data.response !== undefined) {
     return {
+      legal_validation_status: data.legal_validation_status,
+      can_state_final_outcome: data.can_state_final_outcome === true,
+      validation_warning: data.validation_warning,
       conversationId: data.conversationId,
       requestId: data.requestId,
       response: data.response,

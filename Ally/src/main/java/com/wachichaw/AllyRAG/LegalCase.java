@@ -5,6 +5,17 @@ import lombok.Data;
 
 @Data
 public class LegalCase {
+    @com.fasterxml.jackson.annotation.JsonProperty("legal_validation_status")
+    private String legalValidationStatus = "unverified";
+    @com.fasterxml.jackson.annotation.JsonProperty("can_state_final_outcome")
+    private boolean canStateFinalOutcome;
+    @com.fasterxml.jackson.annotation.JsonProperty("validation_warning")
+    private String validationWarning;
+
+    @JsonProperty("case_number")
+    private String caseNumber;
+    @JsonProperty("decision_date")
+    private String decisionDate;
     private String title;
     private Double score;
     private String content;

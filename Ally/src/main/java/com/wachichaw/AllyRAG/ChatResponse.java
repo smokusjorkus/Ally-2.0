@@ -5,6 +5,13 @@ import java.util.List;
 
 @Data
 public class ChatResponse {
+    @com.fasterxml.jackson.annotation.JsonProperty("legal_validation_status")
+    private String legalValidationStatus = "unverified";
+    @com.fasterxml.jackson.annotation.JsonProperty("can_state_final_outcome")
+    private boolean canStateFinalOutcome;
+    @com.fasterxml.jackson.annotation.JsonProperty("validation_warning")
+    private String validationWarning;
+
     private String conversationId;
     private String requestId;
     private String response;

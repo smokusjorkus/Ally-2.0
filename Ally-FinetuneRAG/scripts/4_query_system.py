@@ -340,7 +340,7 @@ ANSWER:"""
 if __name__ == "__main__":
     # Option 1: Use fine-tuned Vertex AI model (RECOMMENDED)
     ally = ALLYAssistant(
-        index_name="ally-supreme-court-cases",  # Optional, defaults to env var
+        index_name=os.environ["PINECONE_INDEX_NAME"],  # Optional, defaults to env var
         use_finetuned=True  # Set to True to use your fine-tuned model
     )
     

@@ -1,3 +1,4 @@
+import RetrievedCases from './RetrievedCases';
 import { historyMessages, mergeHistory } from '../services/consultationHistory';
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Search, MessageSquarePlus, History, RotateCcw, Trash2 } from 'lucide-react';
@@ -133,6 +134,9 @@ const AllyConsultationChat = () => {
         sender: 'ai',
         requestId,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        legal_validation_status: data.legal_validation_status,
+        can_state_final_outcome: data.can_state_final_outcome,
+        validation_warning: data.validation_warning,
         relevantCases: data.relevantCases,
         caseCount: data.caseCount,
         confidence: data.confidence,
@@ -353,69 +357,8 @@ const AllyConsultationChat = () => {
                     </div>
                   </div>
 
-                  {/* Display Relevant Cases if RAG was used */}
-                  {message.sender === 'ai' && message.ragEnabled && (
-                    <div className="mt-3 ml-0 min-w-0">
-                      {message.relevantCases && message.relevantCases.length > 0 ? (
-                        // Show cases if found above threshold
-                        <div className="max-w-[min(42rem,85%)] overflow-hidden break-words p-4 bg-blue-50 rounded-2xl [overflow-wrap:anywhere]">
-                          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                            <h4 className="text-xs font-semibold text-blue-800 flex items-center gap-1 min-w-0">
-                              <Search className="w-3 h-3" />
-                              Found {message.caseCount} Relevant Case{message.caseCount > 1 ? 's' : ''}
-                            </h4>
-                            {message.confidence && message.confidence !== 'Low relevance' && (
-                              <span className="text-xs text-blue-700 font-medium">
-                                ✓ {message.confidence}
-                              </span>
-                            )}
-                          </div>
-                          <div className="space-y-2">
-                            {message.relevantCases.map((legalCase, idx) => (
-                              <div key={idx} className="min-w-0 p-3 bg-white rounded-xl">
-                                <p className="text-xs font-semibold text-gray-800">
-                                  {idx + 1}. {legalCase.title}
-                                </p>
-                                <p className="text-xs text-gray-600 mt-1">
-                                  Relevance: {legalCase.score?.toFixed(1)}%
-                                </p>
-                                {legalCase.citation && (
-                                  <p className="text-xs text-gray-500 mt-1 italic">
-                                    {legalCase.citation}
-                                  </p>
-                                )}
-                                {typeof legalCase.source_url === 'string' && legalCase.source_url.trim() && (
-                                  <a
-                                    href={legalCase.source_url.trim()}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 hover:underline mt-2 inline-block break-all"
-                                  >
-                                    View Official Supreme Court Decision
-                                  </a>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : message.confidence === 'Low relevance' || message.caseCount === 0 ? (
-                        // Show "no relevant cases" message
-                        <div className="max-w-[min(42rem,85%)] break-words p-4 bg-red-50 rounded-2xl [overflow-wrap:anywhere]">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Search className="w-4 h-4 text-red-600" />
-                            <h4 className="text-xs font-semibold text-red-800">
-                              No Highly Relevant Cases Found
-                            </h4>
-                          </div>
-                          <p className="text-xs text-red-700 leading-relaxed">
-                            The search didn't find cases with high relevance (≥54%) to your question. 
-                            <br />
-                            <strong>Try:</strong> Providing more specific details, using legal terms, or specifying the area of law.
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
+                  {message.sender === 'ai' && message.ragEnabled && <RetrievedCases message={message} />}
+
                 </div>
               ))}
         

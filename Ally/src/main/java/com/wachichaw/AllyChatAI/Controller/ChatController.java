@@ -152,192 +152,32 @@ public class ChatController {
         if (request.isUseRAG()) {
             System.out.println("🔍 RAG enabled - calling Python service...");
             
-            RagSearchResponse ragResults = ragService.searchRelevantCases(priorTurns.isEmpty() ? request.getMessage()
-                : priorTurns.get(priorTurns.size() - 1).getUserMessage() + "\nFollow-up: " + request.getMessage(), 3);
-
-            String ragRejectionStage = ragResults != null ? ragResults.getRejectionStage() : null;
-            boolean canAnswerWithoutRag = "no_results".equals(ragRejectionStage)
-                || "low_relevance".equals(ragRejectionStage)
-                || "system_error".equals(ragRejectionStage);
-            
-            if (ragResults != null && Boolean.TRUE.equals(ragResults.getRejected()) && !canAnswerWithoutRag) {
-                System.out.println("❌ REJECTED by RAG (" + ragResults.getRejectionStage() + ")");
-                System.out.println("   Reason: " + ragResults.getRejectionReason());
-                System.out.println("=".repeat(60) + "\n");
-                
-                String rejectionReason = ragResults.getRejectionReason();
-                if (rejectionReason == null || rejectionReason.isBlank()
-                        || "null".equalsIgnoreCase(rejectionReason.trim())) {
-                    rejectionReason = "I couldn't generate an answer to your question this time.";
-                }
-                String rejectionMessage;
-                
-                switch (ragResults.getRejectionStage() != null ? ragResults.getRejectionStage() : "") {
-                    case "deepseek_filter":
-                        rejectionMessage = "❌ " + rejectionReason + "\n\n" +
-                            "💡 I specialize in Philippine law. Please ask about:\n" +
-                            "• Legal rights and obligations\n" +
-                            "• Court cases and procedures\n" +
-                            "• Philippine laws and regulations\n" +
-                            "• Legal remedies and penalties";
-                        break;
-                    
-                    case "no_results":
-                        rejectionMessage = "❌ No relevant Supreme Court cases found.\n\n" +
-                            "💡 Try:\n" +
-                            "• Rephrasing with more general legal terms\n" +
-                            "• Adding more context about your situation\n" +
-                            "• Specifying the legal area (labor, criminal, civil, etc.)";
-                        break;
-                    
-                    case "low_relevance":
-                        rejectionMessage = "❌ Cases found but relevance too low.\n\n" +
-                            "To get better results:\n" +
-                            "• Use specific legal terms (e.g., 'illegal dismissal' vs 'fired unfairly')\n" +
-                            "• Add more details about your situation\n" +
-                            "• Specify the legal area involved\n\n" +
-                            "💡 The more detailed your question, the better I can help!";
-                        break;
-                    
-                    default:
-                        rejectionMessage = "❌ " + rejectionReason + "\n\n" +
-                            "💡 Please try again. You can also describe what happened and what help you need in your own words.";
-                }
-                
-                chatResponse.setResponse(rejectionMessage);
-                chatResponse.setRelevantCases(null);
-                chatResponse.setCaseCount(0);
-                chatResponse.setConfidence("Rejected - " + ragResults.getRejectionStage());
-                saveHistoryIfAuthenticated(httpRequest, request.getMessage(), chatResponse);
-                
-                return ResponseEntity.badRequest().body(chatResponse);
+            RagSearchResponse ragResults;
+            try {
+                ragResults = ragService.searchRelevantCases(request.getMessage(), 3);
+                if (ragResults == null || "system_error".equals(ragResults.getRejectionStage()))
+                    throw new IllegalStateException();
+            } catch (Exception unavailable) {
+                chatResponse.setResponse("Case retrieval is unavailable. Please try again later.");
+                chatResponse.setConfidence("Service unavailable");
+                return ResponseEntity.status(503).body(chatResponse);
             }
-            
-            System.out.println("✅ PASSED RAG validation");
-            
-            if (canAnswerWithoutRag) {
-                System.out.println("No usable RAG context; continuing with a direct DeepSeek answer.");
-                chatResponse.setRelevantCases(null);
-                chatResponse.setCaseCount(0);
-                chatResponse.setConfidence("No highly relevant cases");
-            }
+            chatResponse.setLegalValidationStatus(ragResults.getLegalValidationStatus());
+            chatResponse.setCanStateFinalOutcome(ragResults.isCanStateFinalOutcome());
+            chatResponse.setValidationWarning(ragResults.getValidationWarning());
+            List<LegalCase> cases = ragResults.getCases() == null ? List.of()
+                : ragResults.getCases().stream().limit(3).toList();
+            chatResponse.setRelevantCases(cases);
+            chatResponse.setCaseCount(cases.size());
+            chatResponse.setConfidence(cases.isEmpty() ? null : String.format("%.1f%%", cases.get(0).getScore()));
+            // Never generate an inferred outcome from retrieved excerpts.
+            chatResponse.setResponse(Boolean.TRUE.equals(ragResults.getRejected())
+                ? ragResults.getRejectionReason()
+                : cases.isEmpty() ? "No relevant cases found. Try a more specific case title or case number."
+                : "Retrieved case text is shown below. Review the source decision before relying on a legal outcome.");
+            saveHistoryIfAuthenticated(httpRequest, request.getMessage(), chatResponse);
+            return ResponseEntity.ok(chatResponse);
 
-            if (ragResults != null && ragResults.getCases() != null && !ragResults.getCases().isEmpty()) {
-                
-                // Filter by threshold AND deduplicate by case number
-                List<LegalCase> relevantCases = ragResults.getCases().stream()
-                    .filter(c -> c.getScore() != null && c.getScore() >= relevanceThreshold)
-                    .collect(Collectors.toMap(
-                        LegalCase::getCitation,           // Key: case number (G.R. No. 265876)
-                        c -> c,                           // Value: the case itself
-                        (existing, replacement) -> 
-                            existing.getScore() > replacement.getScore() ? existing : replacement  // Keep highest score
-                    ))
-                    .values()
-                    .stream()
-                    .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))  // Sort by score descending
-                    .collect(Collectors.toList());
-
-                System.out.println("📊 Found " + ragResults.getCases().size() + " cases total");
-                System.out.println("📊 " + relevantCases.size() + " unique cases above " + relevanceThreshold + "% threshold");
-                
-                System.out.println("📊 Found " + ragResults.getCases().size() + " cases total");
-                System.out.println("📊 " + relevantCases.size() + " cases above " + relevanceThreshold + "% threshold");
-                
-                if (!relevantCases.isEmpty()) {
-                    chatResponse.setRelevantCases(relevantCases);
-                    chatResponse.setCaseCount(relevantCases.size());
-                    
-                    double topScore = relevantCases.get(0).getScore();
-                    chatResponse.setConfidence(String.format("%.0f%%", topScore));
-                    
-                    System.out.println("✅ Top case relevance: " + String.format("%.1f%%", topScore));
-                    
-                    StringBuilder contextBuilder = new StringBuilder();
-                    contextBuilder.append("Based on the following relevant Philippine Supreme Court cases:\n\n");
-                    
-                    for (int i = 0; i < relevantCases.size(); i++) {
-                        LegalCase legalCase = relevantCases.get(i);
-                        
-                        System.out.println("   📄 Case " + (i+1) + ": " + legalCase.getTitle() + 
-                                        " (" + String.format("%.1f%%", legalCase.getScore()) + ")");
-                        
-                        contextBuilder.append(String.format("[CASE %d] %s (Relevance: %.1f%%)\n", 
-                            i + 1, legalCase.getTitle(), legalCase.getScore()));
-                        
-                        if (legalCase.getCitation() != null && !legalCase.getCitation().isEmpty()) {
-                            contextBuilder.append(String.format("Citation: %s\n", legalCase.getCitation()));
-                        }
-                        
-                        if (legalCase.getSection() != null && !legalCase.getSection().isEmpty()) {
-                            contextBuilder.append(String.format("Section: %s\n", legalCase.getSection()));
-                        }
-                        
-                        String content = legalCase.getContent();
-                        if (content != null && content.length() > 800) {
-                            content = content.substring(0, 800) + "...";
-                        }
-                        contextBuilder.append(String.format("Content: %s\n\n", content != null ? content : ""));
-                    }
-                    
-                    contextBuilder.append("User Question: ").append(request.getMessage());
-                    contextBuilder.append("\n\n");
-                    contextBuilder.append("INSTRUCTIONS:\n");
-                    contextBuilder.append("The cases above are retrieved from ALLY's local RAG database and may include 2025 or 2026 Supreme Court cases. ");
-                    contextBuilder.append("Use them as provided context. Do not reject them or claim you cannot access newer cases if they are included above. ");
-                    contextBuilder.append("Please answer the user's question using the above Supreme Court cases as reference. ");
-                    contextBuilder.append("Cite specific cases using [Case 1], [Case 2] format in your response. ");
-                    contextBuilder.append("Provide a clear answer with legal basis and practical implications. ");
-                    contextBuilder.append("End with the disclaimer: '⚠️ This is legal information, not legal advice. ");
-                    contextBuilder.append("For your specific situation, please consult a qualified lawyer.'");
-                    
-                    enhancedPrompt = contextBuilder.toString();
-                    
-                    System.out.println("✅ Enhanced prompt built with " + relevantCases.size() + " cases");
-                    
-                } else {
-                    System.out.println("⚠️  No cases above threshold - providing guidance");
-                    
-                    chatResponse.setRelevantCases(null);
-                    chatResponse.setCaseCount(0);
-                    chatResponse.setConfidence("Low relevance");
-                    
-                    enhancedPrompt = String.format(
-                        "⚠️ I searched my database but couldn't find cases closely matching your question.\n\n" +
-                        "Your question: %s\n\n" +
-                        "For better case references, please:\n" +
-                        "• Add more specific details\n" +
-                        "• Specify the legal area (labor, criminal, civil, family)\n" +
-                        "• Use legal terms if you know them\n\n" +
-                        "I'll still provide general legal information, but with more details, " +
-                        "I can find relevant Supreme Court cases to support my answer.\n\n" +
-                        "Please provide a general answer anyway, noting no specific cases were found.",
-                        request.getMessage()
-                    );
-                }
-                
-            } else {
-                System.out.println("⚠️  No cases found");
-                
-                chatResponse.setRelevantCases(null);
-                chatResponse.setCaseCount(0);
-                chatResponse.setConfidence(null);
-                
-                enhancedPrompt = String.format(
-                    "⚠️ No legal cases found in the database.\n\n" +
-                    "User Question: %s\n\n" +
-                    "INSTRUCTIONS:\n" +
-                    "Provide a general answer based on Philippine law knowledge, but inform the user:\n" +
-                    "1. No specific Supreme Court cases were found\n" +
-                    "2. They should verify with a qualified lawyer\n" +
-                    "3. Suggest rephrasing with more specific legal terms\n\n" +
-                    "Be helpful but cautious.",
-                    request.getMessage()
-                );
-            }
-            
-            System.out.println("=".repeat(60) + "\n");
-            
         } else {
             System.out.println("ℹ️  RAG not enabled - direct to DeepSeek");
             System.out.println("=".repeat(60) + "\n");

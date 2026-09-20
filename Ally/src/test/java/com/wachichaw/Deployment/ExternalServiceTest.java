@@ -58,7 +58,7 @@ class ExternalServiceTest {
         var rag = new RagService(1000, 1000);
         assertFalse(rag.isRagServiceHealthy());
         assertNotNull(rag.validateQuestion("Question"));
-        assertNotNull(rag.searchRelevantCases("Question", 3));
+        assertThrows(IllegalStateException.class, () -> rag.searchRelevantCases("Question", 3));
     }
     @Test void unreachableRagIsUnavailable() {
         var rag = new RagService(1000, 1000);
