@@ -82,13 +82,13 @@ public class RagService {
      * Search relevant cases (only when RAG is enabled)
      */
     public RagSearchResponse searchRelevantCases(String query, int topK) {
-        if (!enabled) return new RagSearchResponse();
+        if (!enabled) throw new IllegalStateException("Case retrieval is disabled.");
         try {
             String url = ragServiceUrl + "/search";
 
             Map<String, Object> request = new HashMap<>();
             request.put("query", query);
-            request.put("top_k", topK);
+            request.put("top_k", Math.min(3, Math.max(1, topK)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -102,11 +102,11 @@ public class RagService {
                 return response.getBody();
             }
 
-            return new RagSearchResponse();
+            throw new IllegalStateException("Case retrieval unavailable.");
 
         } catch (Exception e) {
-            System.err.println("RAG service error: " + e.getMessage());
-            return new RagSearchResponse();
+            System.err.println("RAG retrieval unavailable");
+            throw new IllegalStateException("Case retrieval unavailable.");
         }
     }
 
@@ -115,7 +115,9 @@ public class RagService {
         try {
             String healthUrl = ragServiceUrl + "/health";
             ResponseEntity<String> response = healthRestTemplate.getForEntity(healthUrl, String.class);
-            return response.getStatusCode().is2xxSuccessful();
+            return response.getStatusCode().is2xxSuccessful() && response.getBody() != null
+                && "healthy".equals(new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readTree(response.getBody()).path("status").asText());
         } catch (Exception e) {
             return false;
         }
