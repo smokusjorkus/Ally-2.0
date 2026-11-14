@@ -17,6 +17,8 @@ import com.wachichaw.Hearing.Entity.HearingEntity;
 import com.wachichaw.Hearing.Repo.HearingRepo;
 import com.wachichaw.Hearing.Service.HearingService;
 import com.wachichaw.Lawyer.Entity.LawyerEntity;
+import com.wachichaw.Notification.NotificationService;
+import com.wachichaw.Notification.NotificationType;
 import com.wachichaw.User.Entity.AccountType;
 import com.wachichaw.User.Entity.UserEntity;
 import com.wachichaw.User.Repo.UserRepo;
@@ -39,6 +41,7 @@ class HearingAccessTest {
     private final LegalCaseRepo cases = mock(LegalCaseRepo.class);
     private final HearingRepo hearings = mock(HearingRepo.class);
     private final AuditLogService audit = mock(AuditLogService.class);
+    private final NotificationService notifications = mock(NotificationService.class);
     private final UserRepo users = mock(UserRepo.class);
     private final JwtUtil jwt = new JwtUtil();
     private final LawyerEntity lawyer = new LawyerEntity();
@@ -67,7 +70,7 @@ class HearingAccessTest {
             return hearing;
         });
         var mapper = new ObjectMapper().findAndRegisterModules().disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mvc = MockMvcBuilders.standaloneSetup(new HearingController(new HearingService(cases, hearings, audit), jwt, users))
+        mvc = MockMvcBuilders.standaloneSetup(new HearingController(new HearingService(cases, hearings, audit, notifications), jwt, users))
             .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper)).build();
     }
 
@@ -97,6 +100,7 @@ class HearingAccessTest {
         verify(hearings).save(argThat(hearing -> hearing.getLegalCase() == legalCase
             && hearing.getLocation().equals("RTC Branch 1") && hearing.getBookedBy() == 1));
         verify(audit).log(eq(1), eq("APPOINTMENT_PROPOSED"), eq("APPOINTMENT"), eq("CASE"), eq("10"), anyString(), eq("SUCCESS"));
+        verify(notifications).notifyOtherParticipant(legalCase, 1, NotificationType.APPOINTMENT_PROPOSED);
     }
 
     @Test void clientCanProposeForTheirOwnCase() throws Exception {

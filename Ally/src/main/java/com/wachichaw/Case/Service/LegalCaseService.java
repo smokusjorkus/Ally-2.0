@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.wachichaw.Case.Entity.CaseStatus;
 import com.wachichaw.Case.DTO.AdminCaseOverviewDTO;
@@ -17,6 +18,8 @@ import com.wachichaw.Case.Repo.LegalCaseRepo;
 import com.wachichaw.Client.Entity.ClientEntity;
 import com.wachichaw.Client.Repo.ClientRepo;
 import com.wachichaw.Lawyer.Entity.LawyerEntity;
+import com.wachichaw.Notification.NotificationService;
+import com.wachichaw.Notification.NotificationType;
 import com.wachichaw.User.Repo.UserRepo;
 
 
@@ -30,10 +33,14 @@ public class LegalCaseService {
     @Autowired
     private final LegalCaseRepo legalCaseRepo;
 
-    public LegalCaseService(LegalCaseRepo legalCaseRepo) {
+    private final NotificationService notifications;
+
+    public LegalCaseService(LegalCaseRepo legalCaseRepo, NotificationService notifications) {
         this.legalCaseRepo = legalCaseRepo;
+        this.notifications = notifications;
     }
     
+    @Transactional
     public LegalCasesEntity createLegalCase(int clientId, LawyerEntity lawyer, String title, String caseType, String caseDescription, LocalDateTime caseDate, CaseStatus status) {
         ClientEntity client = clientRepo.findById(clientId)
                 .orElseThrow(() -> new RuntimeException("Client not found with ID: " + clientId));
@@ -55,7 +62,9 @@ public class LegalCaseService {
         legalCase.setDescription(caseDescription);
         legalCase.setDateSubmitted(caseDate);
         legalCase.setStatus(status);
-        return legalCaseRepo.save(legalCase);
+        var saved = legalCaseRepo.save(legalCase);
+        notifications.notify(lawyer, saved.getCaseId(), NotificationType.CASE_SUBMITTED);
+        return saved;
     }
     
     private Long generateNextCaseNumber() {
@@ -96,13 +105,17 @@ public class LegalCaseService {
                 .collect(Collectors.toList());
     }
     
+    @Transactional
     public LegalCasesEntity updateCaseStatus(int caseId, CaseStatus status) {
         if (status == CaseStatus.ACCEPTED) {
             throw new IllegalArgumentException("Use the case acceptance action to accept this case");
         }
-        LegalCasesEntity legalCase = legalCaseRepo.findById(caseId)
+        LegalCasesEntity legalCase = legalCaseRepo.findByIdForUpdate(caseId)
                 .orElseThrow(() -> new RuntimeException("Case not found with ID: " + caseId));
+        if (legalCase.getStatus() == status) return legalCase;
         legalCase.setStatus(status);
+        if (status == CaseStatus.COMPLETED) notifications.notify(legalCase.getClient(), caseId, NotificationType.CASE_COMPLETED);
+        if (status == CaseStatus.DECLINED) notifications.notify(legalCase.getClient(), caseId, NotificationType.CASE_DECLINED);
         return legalCaseRepo.save(legalCase);
     }
 
@@ -139,7 +152,7 @@ public class LegalCaseService {
         return legalCaseRepo.save(legalCase);
     }
 
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public LegalCasesEntity acceptCase(int caseId, int lawyerIdPerformingAction) {
         LegalCasesEntity legalCase = legalCaseRepo.findByIdForUpdate(caseId)
                 .orElseThrow(() -> new RuntimeException("Case not found with ID: " + caseId));
@@ -158,11 +171,13 @@ public class LegalCaseService {
             throw new RuntimeException("Only pending cases can be accepted");
         }
         legalCase.setStatus(CaseStatus.ACCEPTED);
+        notifications.notify(legalCase.getClient(), caseId, NotificationType.CASE_ACCEPTED);
         return legalCaseRepo.save(legalCase);
     }
 
+    @Transactional
     public LegalCasesEntity declineCase(int caseId, int lawyerIdPerformingAction) {
-        LegalCasesEntity legalCase = legalCaseRepo.findById(caseId)
+        LegalCasesEntity legalCase = legalCaseRepo.findByIdForUpdate(caseId)
                 .orElseThrow(() -> new RuntimeException("Case not found with ID: " + caseId));
 
         // Authorization check
@@ -170,7 +185,9 @@ public class LegalCaseService {
             throw new RuntimeException("Lawyer " + lawyerIdPerformingAction + " is not authorized to decline case " + caseId);
         }
 
+        if (legalCase.getStatus() == CaseStatus.DECLINED) return legalCase;
         legalCase.setStatus(CaseStatus.DECLINED);
+        notifications.notify(legalCase.getClient(), caseId, NotificationType.CASE_DECLINED);
         return legalCaseRepo.save(legalCase);
     }
 
