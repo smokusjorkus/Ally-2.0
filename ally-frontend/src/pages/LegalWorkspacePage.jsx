@@ -20,6 +20,8 @@ const LegalWorkspacePage = () => {
   const documentService = demo?.documentService || productionDocumentService;
   const { key: locationKey } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const linkedCaseId = searchParams.get('caseId');
+  const caseLinkVisit = linkedCaseId ? locationKey : null;
   const [authData, setAuthData] = useState(null);
   const [cases, setCases] = useState([]);
   const [selectedCaseId, setSelectedCaseId] = useState(null);
@@ -45,8 +47,8 @@ const LegalWorkspacePage = () => {
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'ai') setActiveTab('overview');
-    else if (demo && ['overview', 'hearings', 'documents', 'notes'].includes(tab)) setActiveTab(tab);
-  }, [demo, locationKey, searchParams]);
+    else if (['overview', 'hearings', 'documents', 'notes'].includes(tab)) setActiveTab(tab);
+  }, [locationKey, searchParams]);
 
   useEffect(() => {
     if (demo && selectedCaseId) demo.visit(activeTab);
@@ -73,13 +75,13 @@ const LegalWorkspacePage = () => {
           : await caseService.getClientCases(authData.userId);
         if (!active) return;
         const visibleCases = sortCasesByRecency((caseList || []).filter(item => workspaceCaseGroup(item) !== null));
-        const submittedCase = visibleCases.find(item => Number(item.caseId) === Number(submittedCaseId.current));
-        const initialTab = (submittedCase && workspaceCaseGroup(submittedCase)) || ['recent', 'completed', 'declined'].find(group =>
+        const requestedCase = visibleCases.find(item => String(item.caseId) === String(submittedCaseId.current ?? linkedCaseId));
+        const initialTab = (requestedCase && workspaceCaseGroup(requestedCase)) || ['recent', 'completed', 'declined'].find(group =>
           visibleCases.some(item => workspaceCaseGroup(item) === group)) || 'recent';
         const initialCases = visibleCases.filter(item => workspaceCaseGroup(item) === initialTab);
         setCases(visibleCases);
         setCaseListTab(initialTab);
-        setSelectedCaseId(submittedCase?.caseId || initialCases[0]?.caseId || null);
+        setSelectedCaseId(requestedCase?.caseId || initialCases[0]?.caseId || null);
         submittedCaseId.current = null;
         setLoading(false);
         const counts = await Promise.all(visibleCases.map(async item =>
@@ -97,7 +99,7 @@ const LegalWorkspacePage = () => {
     };
     load();
     return () => { active = false; };
-  }, [authData, caseListVersion]);
+  }, [authData, caseListVersion, caseLinkVisit, linkedCaseId, caseService, documentService]);
 
   const refreshDocumentCount = async caseId => {
     try {

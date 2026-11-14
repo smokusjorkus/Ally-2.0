@@ -16,6 +16,8 @@ import com.wachichaw.Hearing.DTO.HearingRequest;
 import com.wachichaw.Hearing.DTO.HearingResponse;
 import com.wachichaw.Hearing.Entity.HearingEntity;
 import com.wachichaw.Hearing.Repo.HearingRepo;
+import com.wachichaw.Notification.NotificationService;
+import com.wachichaw.Notification.NotificationType;
 import com.wachichaw.User.Entity.AccountType;
 import com.wachichaw.User.Entity.UserEntity;
 
@@ -24,11 +26,13 @@ public class HearingService {
     private final LegalCaseRepo cases;
     private final HearingRepo hearings;
     private final AuditLogService audit;
+    private final NotificationService notifications;
 
-    public HearingService(LegalCaseRepo cases, HearingRepo hearings, AuditLogService audit) {
+    public HearingService(LegalCaseRepo cases, HearingRepo hearings, AuditLogService audit, NotificationService notifications) {
         this.cases = cases;
         this.hearings = hearings;
         this.audit = audit;
+        this.notifications = notifications;
     }
 
     @Transactional(readOnly = true)
@@ -49,23 +53,25 @@ public class HearingService {
         hearing.setCreatedAt(Instant.now());
         hearing = hearings.save(hearing);
         log(user, caseId, "APPOINTMENT_PROPOSED");
+        notifications.notifyOtherParticipant(legalCase, user.getUserId(), NotificationType.APPOINTMENT_PROPOSED);
         return HearingResponse.from(hearing);
     }
 
     @Transactional
     public HearingResponse edit(int caseId, Long id, UserEntity user, HearingRequest request) {
-        activeCase(caseId, user);
+        var legalCase = activeCase(caseId, user);
         var hearing = appointment(caseId, id);
         requireRevision(hearing, request.revision());
         requireFuture(hearing);
         applyProposal(hearing, user, request);
         log(user, caseId, "APPOINTMENT_EDITED");
+        notifications.notifyOtherParticipant(legalCase, user.getUserId(), NotificationType.APPOINTMENT_UPDATED);
         return HearingResponse.from(hearings.save(hearing));
     }
 
     @Transactional
     public HearingResponse accept(int caseId, Long id, UserEntity user, long revision) {
-        activeCase(caseId, user);
+        var legalCase = activeCase(caseId, user);
         var hearing = appointment(caseId, id);
         requireRevision(hearing, revision);
         requireFuture(hearing);
@@ -80,6 +86,7 @@ public class HearingService {
         hearing.setAcceptedBy(user.getUserId());
         hearing.setRevision(revision + 1);
         log(user, caseId, "APPOINTMENT_ACCEPTED");
+        notifications.notifyOtherParticipant(legalCase, user.getUserId(), NotificationType.APPOINTMENT_CONFIRMED);
         return HearingResponse.from(hearings.save(hearing));
     }
 
@@ -93,6 +100,7 @@ public class HearingService {
         requireRevision(hearing, revision);
         hearings.delete(hearing);
         log(user, caseId, "APPOINTMENT_DELETED");
+        notifications.notifyOtherParticipant(legalCase, user.getUserId(), NotificationType.APPOINTMENT_REMOVED);
     }
 
     private LegalCasesEntity activeCase(int caseId, UserEntity user) {

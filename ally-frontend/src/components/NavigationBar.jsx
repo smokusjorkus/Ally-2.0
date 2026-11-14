@@ -6,6 +6,7 @@ import { shouldHideNavigation } from '../utils/navigation.js';
 import NotificationDropdown from './NotificationDropdown';
 import { useSidebar } from '../contexts/SidebarContext';
 import useLawyerStatus from '../hooks/useLawyerStatus.js';
+import useNotifications from '../hooks/useNotifications.js';
 import { useDemoRuntime } from '../demo/DemoContext';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
 
@@ -27,14 +28,9 @@ const NavigationBar = () => {
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
 
-  // Check if there are notifications (lawyer approval warning or other notifications)
-  const hasNotifications = useMemo(() => {
-    if (!statusLoading && isLawyer && status && status !== 'approved') {
-      return true;
-    }
-    // TODO: Add check for other backend notifications when implemented
-    return false;
-  }, [status, isLawyer, statusLoading]);
+  const notifications = useNotifications(demo ? null : authData?.token, isNotificationOpen);
+  const approvalStatus = !statusLoading && isLawyer && ['pending', 'rejected'].includes(status) ? status : null;
+  const hasNotifications = approvalStatus || notifications.inbox?.hasUnread;
 
   useEffect(() => {
     let active = true;
@@ -144,7 +140,10 @@ const NavigationBar = () => {
                   <LanguageSwitcher inNavigation />
                   <div className="relative" ref={notificationRef}>
                     <button
+                      type="button"
                       aria-label="Notifications"
+                      aria-expanded={isNotificationOpen}
+                      aria-controls={isNotificationOpen ? 'notification-inbox' : undefined}
                       onClick={toggleNotifications}
                       className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${
                         isNotificationOpen ? 'bg-blue-50' : 'hover:bg-gray-50'
@@ -156,14 +155,14 @@ const NavigationBar = () => {
                       />
                       {/* Notification Badge */}
                       {hasNotifications && (
-                        <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                        <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"><span className="sr-only">New updates</span></span>
                       )}
                     </button>
-                    <NotificationDropdown
-                      isOpen={isNotificationOpen}
+                    {isNotificationOpen && <NotificationDropdown
                       onClose={() => setIsNotificationOpen(false)}
-                      currentUser={userDetails}
-                    />
+                      approvalStatus={approvalStatus}
+                      {...notifications}
+                    />}
                   </div>
 
                   {/* Profile Dropdown */}

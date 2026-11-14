@@ -17,6 +17,7 @@ import com.wachichaw.Case.Entity.LegalCasesEntity;
 import com.wachichaw.Case.Repo.LegalCaseRepo;
 import com.wachichaw.Case.Service.LegalCaseService;
 import com.wachichaw.Lawyer.Entity.LawyerEntity;
+import com.wachichaw.Notification.NotificationService;
 import com.wachichaw.User.Entity.AccountType;
 
 class DocumentOtpAcceptanceTest {
@@ -32,7 +33,7 @@ class DocumentOtpAcceptanceTest {
         legalCase.setStatus(CaseStatus.PENDING);
         when(repo.findByIdForUpdate(7)).thenReturn(Optional.of(legalCase));
         when(repo.save(legalCase)).thenReturn(legalCase);
-        var service = new LegalCaseService(repo);
+        var service = new LegalCaseService(repo, mock(NotificationService.class));
         assertThrows(RuntimeException.class, () -> service.acceptCase(7, 2));
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(lawyer, null, List.of()));
         var accepted = service.acceptCase(7, 2);

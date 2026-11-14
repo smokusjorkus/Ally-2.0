@@ -92,7 +92,6 @@ const LandingPage = () => {
           </nav>
 
           <div className="landing-nav__actions">
-            <button className="button button--text" onClick={() => navigate('/demo')}>Try respondent demo</button>
             <button className="button button--text" onClick={() => navigate('/login')}>Log in</button>
             <button className="button button--dark button--small" onClick={goToSignup}>
               Get started <ArrowRight size={16} />
@@ -114,7 +113,6 @@ const LandingPage = () => {
             <a href="#platform" onClick={closeMenu}>Platform</a>
             <a href="#how-it-works" onClick={closeMenu}>How it works</a>
             <a href="#why-ally" onClick={closeMenu}>Why ALLY</a>
-            <button onClick={() => navigate('/demo')}>Try respondent demo</button>
             <button onClick={() => navigate('/login')}>Log in</button>
             <button className="button button--dark" onClick={goToSignup}>Get started</button>
           </div>
